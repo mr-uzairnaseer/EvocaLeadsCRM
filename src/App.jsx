@@ -47,6 +47,9 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userModalMode, setUserModalMode] = useState('add');
+  const [selectedUser, setSelectedUser] = useState(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
 
@@ -190,7 +193,16 @@ function App() {
         {activeTab === 'Users' && (
           <UsersView 
             onImport={() => setShowImportModal(true)} 
-            onAdd={() => setShowAddUserModal(true)} 
+            onAdd={() => {
+              setUserModalMode('add');
+              setSelectedUser(null);
+              setShowUserModal(true);
+            }} 
+            onEdit={(user) => {
+              setUserModalMode('edit');
+              setSelectedUser(user);
+              setShowUserModal(true);
+            }}
             onResetPassword={(name) => {
               setResetTargetUser(name);
               setShowResetPasswordModal(true);
@@ -202,7 +214,7 @@ function App() {
       {/* Modals */}
       {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
       {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} />}
-      {showAddUserModal && <AddUserModal onClose={() => setShowAddUserModal(false)} />}
+      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} />}
       {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} />}
       
       {/* Search Popup */}
@@ -549,7 +561,7 @@ const CalendarView = () => {
   );
 };
 
-const UsersView = ({ onImport, onAdd, onResetPassword }) => {
+const UsersView = ({ onImport, onAdd, onEdit, onResetPassword }) => {
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -577,20 +589,20 @@ const UsersView = ({ onImport, onAdd, onResetPassword }) => {
       </div>
 
       <div className="users-grid">
-        <UserCard initials="VP" name="Vandan Popat" handle="@vandan.p" email="vandan.p@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Vandan Popat")} />
-        <UserCard initials="OR" name="Oleksiy Radchenko" handle="@oleksiy.r" email="oleksiy.r@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Oleksiy Radchenko")} />
-        <UserCard initials="JC" name="Janey Chudasama" handle="@janey.c" email="janey.c@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Janey Chudasama")} />
-        <UserCard initials="JK" name="James King" handle="@jimmybigburgers" email="jimmybigburgers@gmail.com" role="ADMIN" onReset={() => onResetPassword("James King")} />
-        <UserCard initials="AV" name="Aivi Verousi" handle="@aivi.v" email="aivi.v@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Aivi Verousi")} />
-        <UserCard initials="AW" name="Aaron wake" handle="@aaron" email="aaron@paymetryx.com" role="BDM" onReset={() => onResetPassword("Aaron wake")} />
-        <UserCard initials="U" name="Umair" handle="@mr.umairnaseer" email="mr.umairnaseer@gmail.com" role="ADMIN" onReset={() => onResetPassword("Umair")} />
-        <UserCard initials="JK" name="James King" handle="@James King" email="james.k@mypaymentzen.co.uk" phone="07568263874" role="ADMIN" onReset={() => onResetPassword("James King")} />
+        <UserCard initials="VP" name="Vandan Popat" handle="@vandan.p" email="vandan.p@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Vandan Popat")} />
+        <UserCard initials="OR" name="Oleksiy Radchenko" handle="@oleksiy.r" email="oleksiy.r@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Oleksiy Radchenko")} />
+        <UserCard initials="JC" name="Janey Chudasama" handle="@janey.c" email="janey.c@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Janey Chudasama")} />
+        <UserCard initials="JK" name="James King" handle="@jimmybigburgers" email="jimmybigburgers@gmail.com" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("James King")} />
+        <UserCard initials="AV" name="Aivi Verousi" handle="@aivi.v" email="aivi.v@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Aivi Verousi")} />
+        <UserCard initials="AW" name="Aaron wake" handle="@aaron" email="aaron@paymetryx.com" role="BDM" onEdit={onEdit} onReset={() => onResetPassword("Aaron wake")} />
+        <UserCard initials="U" name="Umair" handle="@mr.umairnaseer" email="mr.umairnaseer@gmail.com" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Umair")} />
+        <UserCard initials="JK" name="James King" handle="@James King" email="james.k@mypaymentzen.co.uk" phone="07568263874" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("James King")} />
       </div>
     </div>
   );
 };
 
-const UserCard = ({ initials, name, handle, email, phone, role, onReset }) => (
+const UserCard = ({ initials, name, handle, email, phone, role, onEdit, onReset }) => (
   <div className="user-card">
     <div className="user-card-header">
       <div className="user-card-avatar">{initials}</div>
@@ -605,7 +617,7 @@ const UserCard = ({ initials, name, handle, email, phone, role, onReset }) => (
       </div>
     </div>
     <div className="user-card-footer">
-      <button className="user-action-btn"><Edit3 size={16} /></button>
+      <button className="user-action-btn" onClick={() => onEdit({ initials, name, handle, email, phone, role })}><Edit3 size={16} /></button>
       <button className="user-action-btn"><UserPlus size={16} /></button>
       <button className="user-action-btn" onClick={onReset}><Key size={16} /></button>
       <button className="user-action-btn delete"><Trash2 size={16} /></button>
@@ -931,30 +943,34 @@ const SearchPopup = ({ onClose }) => {
   );
 };
 
-const AddUserModal = ({ onClose }) => (
+const UserModal = ({ mode, user, onClose }) => (
   <div className="modal-overlay">
     <div className="modal-card" style={{ maxWidth: '500px' }}>
       <div className="modal-header">
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Add Team Member</h2>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>
+          {mode === 'add' ? 'Add Team Member' : 'Edit Team Member'}
+        </h2>
         <button className="modal-close" onClick={onClose}><X size={18} /></button>
       </div>
       <div className="modal-body">
         <div className="form-grid">
           <div className="form-field">
             <label>Full Name *</label>
-            <input type="text" placeholder="e.g. John Doe" />
+            <input type="text" defaultValue={user?.name || ''} placeholder="e.g. John Doe" />
           </div>
           <div className="form-field">
             <label>Username *</label>
-            <input type="text" defaultValue="mr.umairnaseer@gmail.com" />
+            <input type="text" defaultValue={user?.handle || 'mr.umairnaseer@gmail.com'} />
           </div>
-          <div className="form-field">
-            <label>Password *</label>
-            <input type="password" defaultValue=".........." />
-          </div>
+          {mode === 'add' && (
+            <div className="form-field">
+              <label>Password *</label>
+              <input type="password" defaultValue=".........." />
+            </div>
+          )}
           <div className="form-field">
             <label>Role *</label>
-            <select className="form-select">
+            <select className="form-select" defaultValue={user?.role || 'BDA'}>
               <option>BDA</option>
               <option>ADMIN</option>
               <option>BDM</option>
@@ -962,17 +978,17 @@ const AddUserModal = ({ onClose }) => (
           </div>
           <div className="form-field">
             <label>Email</label>
-            <input type="email" />
+            <input type="email" defaultValue={user?.email || ''} />
           </div>
           <div className="form-field">
             <label>Phone</label>
-            <input type="text" />
+            <input type="text" defaultValue={user?.phone || ''} />
           </div>
         </div>
       </div>
       <div className="modal-footer" style={{ borderTop: 'none', padding: '0 1.5rem 1.5rem' }}>
         <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '44px' }} onClick={onClose}>
-          Create User
+          {mode === 'add' ? 'Create User' : 'Save Changes'}
         </button>
       </div>
     </div>
