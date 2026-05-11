@@ -120,19 +120,12 @@ function App() {
             </div>
             <div className="pipeline-stepper">
               <PipelineStep num="21269" label="New" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="83" label="Contacted" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="2" label="Qualified" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="87" label="Booked" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="2" label="Approved" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="0" label="Delivered" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="0" label="Transacting" />
-              <div className="pipeline-arrow">→</div>
               <PipelineStep num="0" label="Non-Trans." />
             </div>
           </section>
