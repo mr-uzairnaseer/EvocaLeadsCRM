@@ -1146,4 +1146,42 @@ const ActivityItem = ({ user, text, time }) => (
   </div>
 );
 
+const NotificationsPopup = ({ onClose }) => {
+  const notifications = [
+    { id: 1, user: 'Oleksiy Radchenko', text: 'owner not in, callbacks scheduled', time: '12 mins ago', unread: true },
+    { id: 2, user: 'System', text: 'New lead created: Berkeley Heath Auto Centre', time: '45 mins ago', unread: true },
+    { id: 3, user: 'Oleksiy Radchenko', text: 'call back arranged', time: '2 hours ago', unread: false },
+    { id: 4, user: 'System', text: 'New lead created: Martin Richings Motor Repairs', time: '3 hours ago', unread: false },
+    { id: 5, user: 'Vandan Popat', text: 'ring out, no answer', time: '5 hours ago', unread: false },
+  ];
+
+  return (
+    <div className="notifications-popup" onClick={e => e.stopPropagation()}>
+      <div className="notifications-header">
+        <h3>Notifications</h3>
+        <button className="mark-read-btn">Mark all as read</button>
+      </div>
+      <div className="notifications-list">
+        {notifications.map(n => (
+          <div key={n.id} className={`notification-item ${n.unread ? 'unread' : ''}`}>
+            <div className="notification-avatar">
+              {n.user === 'System' ? <Activity size={14} /> : n.user[0]}
+            </div>
+            <div className="notification-content">
+              <div className="notification-text">
+                <span className="user-name">{n.user}</span> {n.text}
+              </div>
+              <div className="notification-time">{n.time}</div>
+            </div>
+            {n.unread && <div className="unread-dot"></div>}
+          </div>
+        ))}
+      </div>
+      <div className="notifications-footer" onClick={onClose}>
+        View all notifications
+      </div>
+    </div>
+  );
+};
+
 export default App;
