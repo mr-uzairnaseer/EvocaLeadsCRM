@@ -1,6 +1,6 @@
 :root {
   --sidebar-bg: #f3f4f6;
-  --sidebar-text: #4b5563;
+  --sidebar-text: #1f2937;
   --sidebar-active-bg: #e5e7eb;
   --sidebar-active-text: #111827;
   --border: #e5e7eb;
@@ -69,8 +69,8 @@
 
 .nav-section-label {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #9ca3af;
+  font-weight: 700;
+  color: #6b7280;
   margin: 0.75rem 0.75rem 0.4rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -84,7 +84,7 @@
   border-radius: 6px;
   color: var(--sidebar-text);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
   transition: all 0.2s;
 }
@@ -114,8 +114,8 @@
 /* Team Section */
 .team-subtitle {
   font-size: 0.625rem;
-  font-weight: 800;
-  color: #9ca3af;
+  font-weight: 900;
+  color: #6b7280;
   text-transform: uppercase;
   margin: 0.5rem 0.75rem 0.25rem;
   letter-spacing: 0.1em;
@@ -132,8 +132,8 @@
   gap: 8px;
   padding: 0.3rem 0.75rem;
   font-size: 0.8125rem;
-  color: #374151;
-  font-weight: 500;
+  color: #111827;
+  font-weight: 600;
 }
 
 .status-dot {
