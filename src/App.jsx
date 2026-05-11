@@ -55,6 +55,7 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
   const [accountsViewMode, setAccountsViewMode] = useState('list');
+  const [selectedLead, setSelectedLead] = useState(null);
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -200,7 +201,22 @@ function App() {
           </div>
         </header>
 
-        {activeTab === 'Dashboard' && <DashboardView stats={{totalOpportunities: "21354"}} onNavigate={setActiveTab} />}
+        {activeTab === 'Dashboard' && (
+          <DashboardView 
+            stats={{totalOpportunities: "21354"}} 
+            onNavigate={setActiveTab} 
+            onLeadClick={(lead) => {
+              setSelectedLead(lead);
+              setActiveTab('LeadDetails');
+            }}
+          />
+        )}
+        {activeTab === 'LeadDetails' && (
+          <LeadDetailsView 
+            lead={selectedLead} 
+            onBack={() => setActiveTab('Dashboard')} 
+          />
+        )}
         {activeTab === 'Opportunities' && (
           <OpportunitiesView 
             onAdd={() => setShowAddModal(true)} 
@@ -252,7 +268,7 @@ function App() {
   );
 }
 
-const DashboardView = ({ stats, onNavigate }) => (
+const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
   <div className="page-content">
     <header className="page-header">
       <h1>Dashboard</h1>
@@ -331,11 +347,11 @@ const DashboardView = ({ stats, onNavigate }) => (
           <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>View All</div>
         </div>
         <div className="opportunity-list-clean">
-          <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" />
-          <OpportunityItem name="Martin Richings Motor Repairs" contact="Martin" />
-          <OpportunityItem name="Motortech" contact="Steve" />
-          <OpportunityItem name="Circuit Motors Ltd" contact="" />
-          <OpportunityItem name="Purley Road Garage" contact="" />
+          <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" onClick={() => onLeadClick({ name: "Berkeley Heath Auto Centre", contact: "Paul", status: "New", phone: "01453 511533", email: "paul@berkeleyauto.co.uk", address: "GL13 9ET", bda: "Oleksiy Radchenko", bdm: "James King" })} />
+          <OpportunityItem name="Martin Richings Motor Repairs" contact="Martin" onClick={() => onLeadClick({ name: "Martin Richings Motor Repairs", contact: "Martin", status: "New", phone: "01454 311663", email: "martin@richings.co.uk", address: "BS37 6AA", bda: "Oleksiy Radchenko", bdm: "James King" })} />
+          <OpportunityItem name="Motortech" contact="Steve" onClick={() => onLeadClick({ name: "Motortech", contact: "Steve", status: "New", phone: "01454 311663", email: "steve@motortech.co.uk", address: "GL7 1YG", bda: "Oleksiy Radchenko", bdm: "James King" })} />
+          <OpportunityItem name="Circuit Motors Ltd" contact="" onClick={() => onLeadClick({ name: "Circuit Motors Ltd", contact: "N/A", status: "New", phone: "01249 782596", email: "info@circuitmotors.com", address: "SN14 7HB", bda: "Oleksiy Radchenko", bdm: "James King" })} />
+          <OpportunityItem name="Purley Road Garage" contact="" onClick={() => onLeadClick({ name: "Purley Road Garage", contact: "N/A", status: "New", phone: "01285 652365", email: "garage@purleyroad.co.uk", address: "GL7 1ER", bda: "Oleksiy Radchenko", bdm: "James King" })} />
         </div>
       </div>
 
@@ -1282,8 +1298,8 @@ const PipelineStep = ({ num, label }) => (
   </div>
 );
 
-const OpportunityItem = ({ name, contact }) => (
-  <div className="opportunity-item-clean">
+const OpportunityItem = ({ name, contact, onClick }) => (
+  <div className="opportunity-item-clean" onClick={onClick} style={{ cursor: 'pointer' }}>
     <div className="opp-info">
       <div className="opp-business-name">{name}</div>
       <div className="opp-contact-name">{contact}</div>
@@ -1291,6 +1307,99 @@ const OpportunityItem = ({ name, contact }) => (
     <div className="new-badge-filled">new</div>
   </div>
 );
+
+const LeadDetailsView = ({ lead, onBack }) => {
+  if (!lead) return null;
+
+  return (
+    <div className="page-content">
+      <header className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+        <button className="btn-icon-only" onClick={onBack} style={{ background: '#f1f5f9', color: '#1e293b' }}>
+          <ChevronLeft size={20} />
+        </button>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '4px' }}>
+            <h1 style={{ margin: 0 }}>{lead.name}</h1>
+            <span className="status-badge-new">New Lead</span>
+          </div>
+          <p style={{ margin: 0 }}>ID: OPP-21354 • Created May 11, 2026</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn-secondary"><Edit3 size={16} /> Edit</button>
+          <button className="btn-primary">Take Ownership</button>
+        </div>
+      </header>
+
+      <div className="dashboard-bottom-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+        <div style={{ display: 'flex', flex_direction: 'column', gap: '1.5rem' }}>
+          <div className="bottom-card">
+            <div className="card-header">
+              <div className="card-title">Lead Information</div>
+              <Building size={16} color="#9ca3af" />
+            </div>
+            <div className="form-grid" style={{ marginTop: '1.5rem' }}>
+              <div className="form-field">
+                <label>Contact Name</label>
+                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.contact}</div>
+              </div>
+              <div className="form-field">
+                <label>Postcode</label>
+                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.address}</div>
+              </div>
+              <div className="form-field">
+                <label>Phone Number</label>
+                <div style={{ fontWeight: 700, color: '#2563eb', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {lead.phone} <Phone size={14} />
+                </div>
+              </div>
+              <div className="form-field">
+                <label>Email Address</label>
+                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.email}</div>
+              </div>
+              <div className="form-field">
+                <label>BDA</label>
+                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.bda}</div>
+              </div>
+              <div className="form-field">
+                <label>BDM</label>
+                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.bdm}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bottom-card">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="card-title">Internal Notes</div>
+              <button className="btn-icon-only"><Plus size={16} /></button>
+            </div>
+            <div style={{ marginTop: '1.5rem' }}>
+              <textarea 
+                className="form-field" 
+                placeholder="Add a private note for the team..." 
+                style={{ width: '100%', minHeight: '100px', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', resize: 'none' }}
+              ></textarea>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button className="btn-primary" style={{ height: '36px', fontSize: '0.8125rem' }}>Save Note</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bottom-card">
+          <div className="card-header">
+            <div className="card-title">Activity Timeline</div>
+            <Activity size={16} color="#9ca3af" />
+          </div>
+          <div className="activity-list" style={{ marginTop: '1.5rem' }}>
+            <ActivityItem user="System" text="Lead details updated" time="1 hour ago" />
+            <ActivityItem user="Oleksiy Radchenko" text="First call attempt - no answer" time="2 hours ago" />
+            <ActivityItem user="System" text="New lead created in pipeline" time="May 11, 8:36 PM" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ActivityItem = ({ user, text, time }) => (
   <div className="activity-item">
