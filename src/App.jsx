@@ -53,6 +53,7 @@ function App() {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -199,7 +200,14 @@ function App() {
         </header>
 
         {activeTab === 'Dashboard' && <DashboardView stats={{totalOpportunities: "21354"}} onNavigate={setActiveTab} />}
-        {activeTab === 'Opportunities' && <OpportunitiesView onAdd={() => setShowAddModal(true)} onImport={() => setShowImportModal(true)} />}
+        {activeTab === 'Opportunities' && (
+          <OpportunitiesView 
+            onAdd={() => setShowAddModal(true)} 
+            onImport={() => setShowImportModal(true)} 
+            viewMode={opportunitiesViewMode}
+            setViewMode={setOpportunitiesViewMode}
+          />
+        )}
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Contact' && <ContactView />}
         {activeTab === 'Calendar' && <CalendarView />}
@@ -338,12 +346,17 @@ const DashboardView = ({ stats, onNavigate }) => (
         </div>
       </div>
     </div>
-  </div>
-);
-
-const OpportunitiesView = ({ onAdd, onImport }) => {
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
+const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode }) => {
+  const opportunities = [
+    { id: 1, business: 'Berkeley Heath Auto Centre', name: 'Paul', postcode: 'GL13 9ET', phone: '01453 511533', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
+    { id: 2, business: 'Martin Richings Motor Repairs', name: 'Martin', postcode: 'BS37 6AA', phone: '01454 311663', provider: 'WorldPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
+    { id: 3, business: 'Motortech', name: 'Steve', postcode: 'GL7 1YG', phone: '01454 311663', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '12/05/26' },
+    { id: 4, business: 'Circuit Motors Ltd', name: 'SN14 7HB', postcode: '', phone: '01249 782596', provider: 'iZettle', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '27/05/26' },
+    { id: 5, business: 'Purley Road Garage', name: 'GL7 1ER', postcode: '', phone: '01285 652365', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '12/05/26' },
+    { id: 6, business: 'OPD Auto Services Ltd', name: 'GL6 7AS', postcode: '', phone: '01452 771009', provider: 'WorldPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '28/05/26' },
+    { id: 7, business: 'Holbrook Garage', name: 'Fam', postcode: 'GL6 7BX', phone: '01452 770272', provider: 'HandyPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '11/11/26' },
+    { id: 8, business: "Gloucester Centre for MG's", name: 'GL10 2LA', postcode: '', phone: '01453 825164', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '19/05/26' },
+  ];
 
   return (
     <div className="page-content">
@@ -363,80 +376,103 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
           <Search size={16} color="#94a3b8" />
           <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
         </div>
-        
-        <div className="dropdown-container">
-          <button className="filter-dropdown" onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button className="filter-dropdown">
             <Filter size={16} />
             <span>All Status</span>
             <ChevronDown size={14} />
           </button>
-          {showStatusDropdown && (
-            <div className="custom-dropdown">
-              <div className="dropdown-item active"><Check size={16} /> All Status</div>
-              <div className="dropdown-item">New</div>
-              <div className="dropdown-item">Contacted</div>
-              <div className="dropdown-item">Qualified</div>
-              <div className="dropdown-item">Converted</div>
-              <div className="dropdown-item">Lost</div>
-            </div>
-          )}
-        </div>
-
-        <div className="dropdown-container">
-          <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
+          <button className="filter-dropdown">
             <UserCircle size={16} />
             <span>All Users</span>
             <ChevronDown size={14} />
           </button>
-          {showUserDropdown && (
-            <div className="custom-dropdown">
-              <div className="dropdown-item active"><Check size={16} /> All Users</div>
-              <div className="dropdown-item">Vandan Popat</div>
-              <div className="dropdown-item">Oleksiy Radchenko</div>
-              <div className="dropdown-item">Janey Chudasama</div>
-              <div className="dropdown-item">James King</div>
-              <div className="dropdown-item">Aivi Verousi</div>
-              <div className="dropdown-item">Aaron wake</div>
-              <div className="dropdown-item">Umair</div>
+          <button className="btn-secondary" style={{ padding: '0 1rem', height: '38px' }}>My Items</button>
+          <div className="view-toggle">
+            <button className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><Grid size={16} /></button>
+            <button className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><List size={16} /></button>
+          </div>
+        </div>
+      </div>
+
+      {viewMode === 'list' ? (
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" /></th>
+                <th>Business <BarChart3 size={12} className="sort-icon" /></th>
+                <th>Contact <BarChart3 size={12} className="sort-icon" /></th>
+                <th>Phone <BarChart3 size={12} className="sort-icon" /></th>
+                <th>Postcode <BarChart3 size={12} className="sort-icon" /></th>
+                <th>Status <BarChart3 size={12} className="sort-icon" /></th>
+                <th>BDA</th>
+                <th>BDM</th>
+                <th>Callback <BarChart3 size={12} className="sort-icon" /></th>
+                <th>Provider <BarChart3 size={12} className="sort-icon" /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {opportunities.map(opp => (
+                <TableRow 
+                  key={opp.id}
+                  business={opp.business} 
+                  contact={opp.name} 
+                  phone={opp.phone} 
+                  postcode={opp.postcode || '—'} 
+                  bda={opp.bda} 
+                  bdm={opp.bdm} 
+                  callback={opp.callback} 
+                  provider={opp.provider || '—'} 
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="opportunities-grid-container">
+          {opportunities.map(opp => (
+            <div key={opp.id} className="opportunity-grid-card">
+              <div className="grid-card-header">
+                <div className="grid-card-main">
+                  <h3 className="grid-card-title">{opp.business}</h3>
+                  <div className="grid-card-meta">
+                    <span>{opp.name}</span>
+                    <span>{opp.postcode}</span>
+                  </div>
+                </div>
+                <span className="status-badge-new">new</span>
+              </div>
+              <div className="grid-card-content">
+                <div className="grid-info-row">
+                  <Phone size={14} className="grid-icon" />
+                  <span className="grid-phone">{opp.phone}</span>
+                </div>
+                {opp.provider && (
+                  <div className="grid-info-row">
+                    <span className="grid-label">Provider:</span>
+                    <span className="grid-value">{opp.provider}</span>
+                  </div>
+                )}
+                <div className="grid-team-box">
+                  <div className="grid-team-row">
+                    <span className="grid-label">BDA:</span>
+                    <span className="grid-value">{opp.bda}</span>
+                  </div>
+                  <div className="grid-team-row">
+                    <span className="grid-label">BDM:</span>
+                    <span className="grid-value">{opp.bdm}</span>
+                  </div>
+                </div>
+                <div className="grid-callback-row">
+                  <span className="grid-label">Callback:</span>
+                  <span className="grid-value">{opp.callback}</span>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-
-        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
-        <div className="view-toggle">
-          <button className="view-btn"><Grid size={16} /></button>
-          <button className="view-btn active"><List size={16} /></button>
-        </div>
-      </div>
-
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th><input type="checkbox" /></th>
-              <th>Business <BarChart3 size={12} className="sort-icon" /></th>
-              <th>Contact <BarChart3 size={12} className="sort-icon" /></th>
-              <th>Phone <BarChart3 size={12} className="sort-icon" /></th>
-              <th>Postcode <BarChart3 size={12} className="sort-icon" /></th>
-              <th>Status <BarChart3 size={12} className="sort-icon" /></th>
-              <th>BDA</th>
-              <th>BDM</th>
-              <th>Callback <BarChart3 size={12} className="sort-icon" /></th>
-              <th>Provider <BarChart3 size={12} className="sort-icon" /></th>
-            </tr>
-          </thead>
-          <tbody>
-            <TableRow business="Berkeley Heath Auto Centre" contact="Paul" phone="01453 511533" postcode="GL13 9ET" bda="Oleksiy Radchenko" bdm="James King" callback="18/05/26" provider="—" />
-            <TableRow business="Martin Richings Motor Repairs" contact="Martin" phone="01454 311663" postcode="BS37 6AA" bda="Oleksiy Radchenko" bdm="James King" callback="18/05/26" provider="WorldPay" />
-            <TableRow business="Motortech" contact="Steve" phone="—" postcode="GL7 1YG" bda="Oleksiy Radchenko" bdm="James King" callback="12/05/26" provider="—" />
-            <TableRow business="Circuit Motors Ltd" contact="—" phone="01249 782596" postcode="SN14 7HB" bda="Oleksiy Radchenko" bdm="James King" callback="27/05/26" provider="iZettle" />
-            <TableRow business="Purley Road Garage" contact="—" phone="01285 652365" postcode="GL7 1ER" bda="Oleksiy Radchenko" bdm="James King" callback="12/05/26" provider="—" />
-            <TableRow business="OPD Auto Services Ltd" contact="—" phone="01452 771009" postcode="GL6 7AS" bda="Oleksiy Radchenko" bdm="James King" callback="28/05/26" provider="WorldPay" />
-            <TableRow business="Holbrook Garage" contact="Fam" phone="01452 770272" postcode="GL6 7BX" bda="Oleksiy Radchenko" bdm="James King" callback="11/11/26" provider="HandyPay" />
-            <TableRow business="Gloucester Centre for MG's" contact="—" phone="01453 825164" postcode="GL10 2LA" bda="Oleksiy Radchenko" bdm="James King" callback="19/05/26" provider="—" />
-          </tbody>
-        </table>
-      </div>
+      )}
 
       <div className="pagination-bar">
         <div className="pagination-info">Showing 1 to 8 of 21354 results</div>

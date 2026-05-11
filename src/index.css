@@ -778,6 +778,67 @@
 
 .btn-icon-only:hover { background: #f1f5f9; color: #1e293b; }
 
+/* Opportunities Grid View */
+.opportunities-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.opportunity-grid-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.opportunity-grid-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.grid-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.grid-card-main { flex: 1; }
+.grid-card-title { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+.grid-card-meta { display: flex; flex-direction: column; font-size: 0.8125rem; color: #64748b; font-weight: 500; }
+
+.status-badge-new {
+  background: #2563eb;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.grid-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.grid-info-row { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; color: #1e293b; font-weight: 600; }
+.grid-icon { color: #64748b; }
+
+.grid-team-box { display: flex; flex-direction: column; gap: 2px; }
+.grid-team-row, .grid-callback-row, .grid-info-row { font-size: 0.8125rem; color: #64748b; font-weight: 500; }
+.grid-label { color: #94a3b8; margin-right: 4px; }
+.grid-value { color: #475569; font-weight: 600; }
+
 /* Dashboard Interactive Stats */
 .stat-card.clickable { cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .stat-card.clickable:hover { 
