@@ -4,12 +4,13 @@ import {
   Calendar, ChevronRight, LogOut, Bell, User,
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
-  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building
+  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building,
+  MessageSquare, Eye, PlayCircle, Clock
 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Contact');
+  const [activeTab, setActiveTab] = useState('Calendar');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -56,9 +57,13 @@ function App() {
               <span>Contact</span>
               {activeTab === 'Contact' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
-            <div className="nav-item">
+            <div 
+              className={`nav-item ${activeTab === 'Calendar' ? 'active' : ''}`}
+              onClick={() => setActiveTab('Calendar')}
+            >
               <div className="nav-item-icon"><Calendar size={18} /></div>
               <span>Calendar</span>
+              {activeTab === 'Calendar' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
           </nav>
 
@@ -123,6 +128,7 @@ function App() {
         {activeTab === 'Opportunities' && <OpportunitiesView onAdd={() => setShowAddModal(true)} onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Contact' && <ContactView />}
+        {activeTab === 'Calendar' && <CalendarView />}
       </main>
 
       {/* Modals */}
@@ -430,6 +436,166 @@ const ContactView = () => {
     </div>
   );
 };
+
+const CalendarView = () => {
+  const [calendarMode, setCalendarMode] = useState('Month');
+
+  return (
+    <div className="page-content">
+      {/* Alert Banner */}
+      <div className="calendar-alert-banner">
+        <Bell size={18} />
+        <div className="alert-content">
+          <div className="alert-title">You have 1 callback today</div>
+          <div className="alert-item"><Phone size={14} /> 7a Coffee Shop</div>
+        </div>
+      </div>
+
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>Calendar</h1>
+          <p>Manage scheduled appointments and callbacks</p>
+        </div>
+        <div className="tab-toggle">
+          {['Month', 'Day', 'List'].map(mode => (
+            <button 
+              key={mode} 
+              className={`tab-btn ${calendarMode === mode ? 'active' : ''}`}
+              onClick={() => setCalendarMode(mode)}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {calendarMode === 'Month' && <CalendarMonthView />}
+      {calendarMode === 'Day' && <CalendarDayView />}
+      {calendarMode === 'List' && <CalendarListView />}
+    </div>
+  );
+};
+
+const CalendarMonthView = () => (
+  <div className="calendar-container">
+    <div className="calendar-nav-header">
+      <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
+      <h2>May 2026</h2>
+      <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+    </div>
+    <div className="calendar-grid">
+      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+        <div key={day} className="cal-weekday">{day}</div>
+      ))}
+      {[...Array(31)].map((_, i) => (
+        <div key={i} className={`cal-day-cell ${i === 11 ? 'today' : ''}`}>
+          <span className="day-num">{i + 1}</span>
+          {i === 0 && <CalendarPill color="mint" label="Nile Valley Cafe" />}
+          {i === 1 && (
+            <>
+              <CalendarPill color="mint" label="Hush Hair & Beauty" />
+              <CalendarPill color="mint" label="PLC Media" />
+              <div className="more-pills">+1 more</div>
+            </>
+          )}
+          {i === 3 && (
+            <>
+              <CalendarPill color="mint" label="Sarah's Cake Shop" />
+              <CalendarPill color="mint" label="Launceston Tyre Co" />
+            </>
+          )}
+          {i === 4 && (
+            <>
+              <CalendarPill color="mint" label="Belgrave road garage" />
+              <CalendarPill color="mint" label="Brunel Tyres & Autocare" />
+              <div className="more-pills">+3 more</div>
+            </>
+          )}
+          {i === 11 && <CalendarPill color="mint" label="7a Coffee Shop" />}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const CalendarDayView = () => (
+  <div className="calendar-container">
+    <div className="calendar-nav-header">
+      <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
+      <h2>Tuesday, May 12, 2026</h2>
+      <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+    </div>
+    <div className="day-schedule-list">
+      <div className="day-event-card">
+        <div className="event-accent"></div>
+        <div className="event-info">
+          <div className="event-header">
+            <Phone size={18} color="#10b981" />
+            <span className="event-title">7a Coffee Shop</span>
+            <span className="status-badge approved" style={{ background: '#dcfce7', color: '#059669' }}>Callback</span>
+            <span className="new-badge">new</span>
+          </div>
+          <div className="event-meta">
+            <div className="meta-item"><Clock size={14} /> 9:00 AM</div>
+            <div className="meta-item"><Phone size={14} /> 441285712918</div>
+          </div>
+        </div>
+        <button className="btn-secondary"><Eye size={16} /> View</button>
+      </div>
+    </div>
+  </div>
+);
+
+const CalendarListView = () => (
+  <div className="calendar-list-workspace">
+    <div className="filters-bar">
+      <div className="filter-search">
+        <Search size={16} color="#94a3b8" />
+        <input type="text" placeholder="Search entries..." />
+      </div>
+      <div className="dropdown-container">
+        <button className="filter-dropdown">
+          <Filter size={16} />
+          <span>All Status</span>
+          <ChevronDown size={14} />
+        </button>
+      </div>
+    </div>
+
+    <div className="appointment-list">
+      <AppointmentCard name="Mister Ernest" type="Appointment" contact="Sandra" bdm="James King" time="May 7, 9:00 PM" />
+      <AppointmentCard name="Ashley House Printing Company Ltd" type="Appointment" contact="No contact" bdm="James King" time="Apr 16, 4:35 PM" />
+      <AppointmentCard name="Sky Tyres Bristol" type="Appointment" contact="Daud" bdm="James King" time="Apr 10, 6:00 PM" />
+      <AppointmentCard name="Mike Knight Tyres Ltd" type="Appointment" contact="Adam/Mark" bdm="James King" time="Apr 10, 4:00 PM" />
+    </div>
+  </div>
+);
+
+const CalendarPill = ({ color, label }) => (
+  <div className={`cal-pill ${color}`}>{label}</div>
+);
+
+const AppointmentCard = ({ name, type, contact, bdm, time }) => (
+  <div className="appointment-card">
+    <div className="app-accent"></div>
+    <div className="app-main">
+      <div className="app-header">
+        <span className="app-title">{name}</span>
+        <span className="app-type">{type}</span>
+      </div>
+      <div className="app-details">
+        <div>{contact}</div>
+        <div className="bdm-label">BDM: {bdm}</div>
+      </div>
+    </div>
+    <div className="app-right">
+      <div className="app-time"><Clock size={14} /> {time}</div>
+      <span className="app-status">scheduled</span>
+      <button className="btn-secondary"><Eye size={16} /> View Lead</button>
+      <button className="btn-primary"><Target size={16} /> Convert</button>
+    </div>
+  </div>
+);
 
 const ContactCard = ({ initial, name, business, phone, type }) => (
   <div className="contact-card">
