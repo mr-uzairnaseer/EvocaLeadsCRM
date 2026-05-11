@@ -1,14 +1,15 @@
 import React from 'react';
 import { 
   Users, LayoutDashboard, Target, Building2, UserCircle, 
-  Calendar, ChevronRight, LogOut, Bell, User
+  Calendar, ChevronRight, LogOut, Bell, User,
+  PanelLeft, Search, Moon
 } from 'lucide-react';
 import './index.css';
 
 function App() {
   return (
     <div className="app-container">
-      {/* Sidebar - 100% Match with Screenshot */}
+      {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="brand-box">Evoca</div>
@@ -68,7 +69,7 @@ function App() {
 
         <div className="sidebar-footer">
           <div className="user-profile">
-            <div className="user-avatar"><User size={24} /></div>
+            <div className="user-avatar"><User size={20} /></div>
             <div className="user-info">
               <div className="user-name">Umair</div>
               <div className="user-email">mr.umairnaseer@gmai...</div>
@@ -76,29 +77,49 @@ function App() {
           </div>
           
           <div className="logout-btn">
-            <LogOut size={20} />
+            <LogOut size={18} />
             <span>Log out</span>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Placeholder */}
-      <main className="main-content">
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#111827' }}>Dashboard Overview</h1>
-        <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Welcome back, Umair.</p>
-        
-        {/* Placeholder for future dashboard content */}
-        <div style={{ 
-          marginTop: '2rem', 
-          height: '400px', 
-          border: '2px dashed #e5e7eb', 
-          borderRadius: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#9ca3af'
-        }}>
-          Dashboard Content Area
+      {/* Main Content Area */}
+      <main className="main-wrapper">
+        <header className="top-nav">
+          <button className="sidebar-toggle-btn">
+            <PanelLeft size={18} />
+          </button>
+          
+          <div className="search-wrapper">
+            <div className="search-bar">
+              <Search size={16} className="search-icon" />
+              <input type="text" placeholder="Search everything..." />
+              <div className="kb-hint">⌘ K</div>
+            </div>
+          </div>
+
+          <button className="theme-toggle-btn">
+            <Moon size={18} />
+          </button>
+        </header>
+
+        <div className="page-content">
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#111827' }}>Dashboard Overview</h1>
+          <p style={{ color: '#6b7280', marginTop: '0.25rem', fontSize: '0.875rem' }}>Welcome back, Umair. Here's what's happening today.</p>
+          
+          <div style={{ 
+            marginTop: '2rem', 
+            height: '400px', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#9ca3af',
+            background: '#f9fafb'
+          }}>
+            Page Content Area
+          </div>
         </div>
       </main>
     </div>
