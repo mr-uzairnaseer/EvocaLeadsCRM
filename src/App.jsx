@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, LayoutDashboard, Target, Building2, UserCircle, 
   Calendar, ChevronRight, LogOut, Bell, User,
@@ -15,10 +15,11 @@ function App() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Toggle Dark Mode
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   return (
-    <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`app-container ${isDarkMode ? 'dark-theme' : ''}`}>
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -166,7 +167,7 @@ const DashboardView = () => (
     <section className="pipeline-section">
       <div className="pipeline-top">
         <div className="pipeline-title">Pipeline</div>
-        <div className="pipeline-subtitle-meta"><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
+        <div className="pipeline-meta"><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
       </div>
       <div className="pipeline-stepper">
         <PipelineStep num="21269" label="New" />
@@ -182,9 +183,9 @@ const DashboardView = () => (
 
     <div className="dashboard-bottom-grid">
       <div className="bottom-card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Recent Opportunities</div>
-          <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>View All</div>
+        <div className="card-header-flex">
+          <div className="card-title">Recent Opportunities</div>
+          <div className="card-link">View All</div>
         </div>
         <div className="opportunity-list-clean">
           <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" />
@@ -198,7 +199,7 @@ const DashboardView = () => (
       <div className="bottom-card">
         <div className="card-header">
           <div className="card-title">Recent Activity</div>
-          <Activity size={16} color="#9ca3af" />
+          <Activity size={16} className="header-icon" />
         </div>
         <div className="activity-list">
           <ActivityItem user="Oleksiy Radchenko" text="owner not in, callbacks cheduled" time="May 11, 8:36 PM" />
@@ -218,12 +219,12 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
 
   return (
     <div className="page-content">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <header className="page-header flex-between">
         <div>
           <h1>Opportunities</h1>
           <p>Manage your payment opportunities pipeline</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="header-actions">
           <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
           <button className="btn-primary" onClick={onAdd}><Plus size={16} /> Add Opportunity</button>
         </div>
@@ -231,7 +232,7 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} color="#94a3b8" />
+          <Search size={16} />
           <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
         </div>
         
@@ -333,7 +334,7 @@ const AccountsView = ({ onImport }) => {
 
   return (
     <div className="page-content">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <header className="page-header flex-between">
         <div>
           <h1>Accounts</h1>
           <p>0 transacting, 2 approved, 0 delivered, 0 non-transacting</p>
@@ -343,7 +344,7 @@ const AccountsView = ({ onImport }) => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} color="#94a3b8" />
+          <Search size={16} />
           <input type="text" placeholder="Search accounts..." />
         </div>
 
@@ -417,7 +418,7 @@ const ContactView = () => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} color="#94a3b8" />
+          <Search size={16} />
           <input type="text" placeholder="Search contacts..." />
         </div>
 
@@ -461,7 +462,7 @@ const CalendarView = () => {
         </div>
       </div>
 
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <header className="page-header flex-between">
         <div>
           <h1>Calendar</h1>
           <p>Manage scheduled appointments and callbacks</p>
@@ -489,12 +490,12 @@ const CalendarView = () => {
 const UsersView = ({ onImport }) => {
   return (
     <div className="page-content">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <header className="page-header flex-between">
         <div>
           <h1>Users</h1>
           <p>Manage your team members and their roles</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="header-actions">
           <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
           <button className="btn-primary"><Plus size={16} /> Add User</button>
         </div>
@@ -502,7 +503,7 @@ const UsersView = ({ onImport }) => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} color="#94a3b8" />
+          <Search size={16} />
           <input type="text" placeholder="Search users..." />
         </div>
         <div className="dropdown-container">
@@ -624,7 +625,7 @@ const CalendarListView = () => (
   <div className="calendar-list-workspace">
     <div className="filters-bar">
       <div className="filter-search">
-        <Search size={16} color="#94a3b8" />
+        <Search size={16} />
         <input type="text" placeholder="Search entries..." />
       </div>
       <div className="dropdown-container">
@@ -677,7 +678,7 @@ const ContactCard = ({ initial, name, business, phone, type }) => (
     <div className="contact-main">
       <div className="contact-name">{name || business}</div>
       <div className="contact-business">
-        <Building size={14} color="#94a3b8" />
+        <Building size={14} className="icon-subtle" />
         <span>{business}</span>
       </div>
     </div>
@@ -817,7 +818,7 @@ const ImportLeadsModal = ({ onClose }) => (
         </div>
         <div className="template-box">
           <div className="template-info">
-            <FileText size={20} color="#64748b" />
+            <FileText size={20} className="icon-subtle" />
             <div>
               <h4>CSV Template</h4>
               <p>Download our template to ensure correct mapping.</p>
@@ -893,7 +894,7 @@ const ActivityItem = ({ user, text, time }) => (
   <div className="activity-item">
     <div className="activity-dot"></div>
     <div className="activity-info">
-      <div className="activity-text"><span style={{ fontWeight: 800 }}>{user}</span>: {text}</div>
+      <div className="activity-text"><span className="user-name-bold">{user}</span>: {text}</div>
       <div className="activity-time">{time}</div>
     </div>
   </div>
