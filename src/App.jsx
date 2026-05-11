@@ -109,7 +109,6 @@ function App() {
             <StatCard label="Opportunities" value="21354" sub="Active in pipeline" icon={<Target size={16} />} />
             <StatCard label="Appointments" value="87" sub="Total" icon={<Calendar size={16} />} />
             <StatCard label="Sold" value="2" sub="Total accounts" icon={<TrendingUp size={16} />} />
-            <StatCard label="Transacting" value="0" sub="Live accounts" icon={<RefreshCw size={16} />} />
             <StatCard label="Conversion" value="0%" sub="Opp to account" icon={<BarChart3 size={16} />} />
             <StatCard label="CC:Sale" value="10721:1" sub="Calls to sale" icon={<Phone size={16} />} />
           </section>
