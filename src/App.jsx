@@ -53,7 +53,7 @@ function App() {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
+  const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('grid');
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
