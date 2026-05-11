@@ -77,6 +77,10 @@
   letter-spacing: 0.05em;
 }
 
+.nav-section-label:first-child {
+  margin-top: 0.5rem;
+}
+
 .nav-menu {
   display: flex;
   flex-direction: column;
@@ -203,14 +207,22 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 6px;
   color: #6b7280;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
 }
 
-.logout-btn:hover { color: #111827; }
+.logout-btn:hover { 
+  background: white;
+  border-color: var(--border);
+  color: #ef4444; /* Alert red on hover */
+}
 
 /* Main Wrapper and Top Nav */
 .main-wrapper {
