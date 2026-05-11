@@ -52,6 +52,7 @@ function App() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -180,8 +181,15 @@ function App() {
             <span>Search everything...</span>
             <div className="kb-hint">⌘ K</div>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="nav-action-btn"><Bell size={18} /></button>
+          <div style={{ display: 'flex', gap: '0.5rem', position: 'relative' }}>
+            <button 
+              className={`nav-action-btn ${showNotifications ? 'active' : ''}`}
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell size={18} />
+              <div className="notification-dot"></div>
+            </button>
+            {showNotifications && <NotificationsPopup onClose={() => setShowNotifications(false)} />}
           </div>
         </header>
 
