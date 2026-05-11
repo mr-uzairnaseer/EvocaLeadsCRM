@@ -5,7 +5,7 @@ import {
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
   Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building,
-  MessageSquare, Eye, PlayCircle, Clock, Mail, Edit3, UserPlus, Key, Trash2
+  MessageSquare, Eye, PlayCircle, Clock, Mail, Edit3, UserX, Key, Trash2
 } from 'lucide-react';
 import './index.css';
 
@@ -618,7 +618,7 @@ const UserCard = ({ initials, name, handle, email, phone, role, onEdit, onReset 
     </div>
     <div className="user-card-footer">
       <button className="user-action-btn" onClick={() => onEdit({ initials, name, handle, email, phone, role })}><Edit3 size={16} /></button>
-      <button className="user-action-btn"><UserPlus size={16} /></button>
+      <button className="user-action-btn"><UserX size={16} /></button>
       <button className="user-action-btn" onClick={onReset}><Key size={16} /></button>
       <button className="user-action-btn delete"><Trash2 size={16} /></button>
     </div>
