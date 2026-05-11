@@ -513,6 +513,31 @@
 .app-time { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; color: #64748b; font-weight: 700; min-width: 140px; }
 .app-status { background: #2563eb; color: white; padding: 4px 12px; border-radius: 6px; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; }
 
+/* Users Workspace */
+.users-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.5rem; }
+
+.user-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; transition: all 0.2s; }
+.user-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+.user-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+.user-card-avatar { width: 48px; height: 48px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748b; font-size: 1rem; border: 1px solid #e2e8f0; }
+
+.role-badge { padding: 4px 12px; border-radius: 6px; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; }
+.role-badge.admin { background: #2563eb; color: white; }
+.role-badge.bdm { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+.user-card-body { flex: 1; }
+.user-card-name { font-size: 1.0625rem; font-weight: 800; color: #1e293b; margin-bottom: 2px; }
+.user-card-handle { font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.75rem; }
+
+.user-card-contact { display: flex; flex-direction: column; gap: 4px; }
+.contact-item { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: #64748b; font-weight: 600; word-break: break-all; }
+
+.user-card-footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f1f5f9; display: flex; gap: 1rem; }
+.user-action-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 4px; transition: all 0.2s; }
+.user-action-btn:hover { color: #1e293b; }
+.user-action-btn.delete:hover { color: #ef4444; }
+
 /* Modals */
 .modal-overlay {
   position: fixed;

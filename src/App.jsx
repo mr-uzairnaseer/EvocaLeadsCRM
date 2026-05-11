@@ -5,12 +5,12 @@ import {
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
   Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building,
-  MessageSquare, Eye, PlayCircle, Clock
+  MessageSquare, Eye, PlayCircle, Clock, Mail, Edit3, UserPlus, Key, Trash2
 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Calendar');
+  const [activeTab, setActiveTab] = useState('Users');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -69,9 +69,13 @@ function App() {
 
           <div className="nav-section-label">Admin</div>
           <nav className="nav-menu">
-            <div className="nav-item">
+            <div 
+              className={`nav-item ${activeTab === 'Users' ? 'active' : ''}`}
+              onClick={() => setActiveTab('Users')}
+            >
               <div className="nav-item-icon"><Users size={18} /></div>
               <span>Users</span>
+              {activeTab === 'Users' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
           </nav>
 
@@ -129,6 +133,7 @@ function App() {
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Contact' && <ContactView />}
         {activeTab === 'Calendar' && <CalendarView />}
+        {activeTab === 'Users' && <UsersView onImport={() => setShowImportModal(true)} />}
       </main>
 
       {/* Modals */}
@@ -475,6 +480,70 @@ const CalendarView = () => {
     </div>
   );
 };
+
+const UsersView = ({ onImport }) => {
+  return (
+    <div className="page-content">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>Users</h1>
+          <p>Manage your team members and their roles</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
+          <button className="btn-primary"><Plus size={16} /> Add User</button>
+        </div>
+      </header>
+
+      <div className="filters-bar">
+        <div className="filter-search">
+          <Search size={16} color="#94a3b8" />
+          <input type="text" placeholder="Search users..." />
+        </div>
+        <div className="dropdown-container">
+          <button className="filter-dropdown">
+            <span>All Roles</span>
+            <ChevronDown size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="users-grid">
+        <UserCard initials="VP" name="Vandan Popat" handle="@vandan.p" email="vandan.p@mypaymentzen.co.uk" role="ADMIN" />
+        <UserCard initials="OR" name="Oleksiy Radchenko" handle="@oleksiy.r" email="oleksiy.r@mypaymentzen.co.uk" role="ADMIN" />
+        <UserCard initials="JC" name="Janey Chudasama" handle="@janey.c" email="janey.c@mypaymentzen.co.uk" role="ADMIN" />
+        <UserCard initials="JK" name="James King" handle="@jimmybigburgers" email="jimmybigburgers@gmail.com" role="ADMIN" />
+        <UserCard initials="AV" name="Aivi Verousi" handle="@aivi.v" email="aivi.v@mypaymentzen.co.uk" role="ADMIN" />
+        <UserCard initials="AW" name="Aaron wake" handle="@aaron" email="aaron@paymetryx.com" role="BDM" />
+        <UserCard initials="U" name="Umair" handle="@mr.umairnaseer" email="mr.umairnaseer@gmail.com" role="ADMIN" />
+        <UserCard initials="JK" name="James King" handle="@James King" email="james.k@mypaymentzen.co.uk" phone="07568263874" role="ADMIN" />
+      </div>
+    </div>
+  );
+};
+
+const UserCard = ({ initials, name, handle, email, phone, role }) => (
+  <div className="user-card">
+    <div className="user-card-header">
+      <div className="user-card-avatar">{initials}</div>
+      <span className={`role-badge ${role.toLowerCase()}`}>{role}</span>
+    </div>
+    <div className="user-card-body">
+      <div className="user-card-name">{name}</div>
+      <div className="user-card-handle">{handle}</div>
+      <div className="user-card-contact">
+        <div className="contact-item"><Mail size={14} /> {email}</div>
+        {phone && <div className="contact-item"><Phone size={14} /> {phone}</div>}
+      </div>
+    </div>
+    <div className="user-card-footer">
+      <button className="user-action-btn"><Edit3 size={16} /></button>
+      <button className="user-action-btn"><UserPlus size={16} /></button>
+      <button className="user-action-btn"><Key size={16} /></button>
+      <button className="user-action-btn delete"><Trash2 size={16} /></button>
+    </div>
+  </div>
+);
 
 const CalendarMonthView = () => (
   <div className="calendar-container">
