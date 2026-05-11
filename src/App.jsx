@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, LayoutDashboard, BarChart3, Settings, 
-  Plus, LogOut, Search, Filter,
-  Building2, ArrowUpRight
+  Plus, LogOut, Search,
+  Building2, ArrowUpRight, Trash2, Edit2, X
 } from 'lucide-react';
 import './index.css';
 
@@ -18,8 +18,10 @@ function App() {
   const [error, setError] = useState('');
   const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
   
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newLead, setNewLead] = useState({ name: '', email: '', company: '', value: 0, status: 'New' });
+  // Lead States
+  const [showModal, setShowModal] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
+  const [leadForm, setLeadForm] = useState({ name: '', email: '', company: '', value: 0, status: 'New' });
 
   useEffect(() => {
     if (isLoggedIn) fetchData();
@@ -73,26 +75,54 @@ function App() {
     setIsLoggedIn(false);
   };
 
-  const handleAddLead = async (e) => {
+  const handleLeadSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+    const method = editingLead ? 'PATCH' : 'POST';
+    const url = editingLead ? `${API_URL}/leads/${editingLead._id}` : `${API_URL}/leads`;
+
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/leads`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(newLead)
+        body: JSON.stringify(leadForm)
       });
       if (res.ok) {
-        setShowAddModal(false);
-        setNewLead({ name: '', email: '', company: '', value: 0, status: 'New' });
+        closeModal();
         fetchData();
       }
     } catch (err) {
-      alert('Error');
+      alert('Error saving lead');
     }
+  };
+
+  const handleDeleteLead = async (id) => {
+    if (!window.confirm('Delete this lead?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/leads/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      alert('Error deleting');
+    }
+  };
+
+  const openEditModal = (lead) => {
+    setEditingLead(lead);
+    setLeadForm({ ...lead });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingLead(null);
+    setLeadForm({ name: '', email: '', company: '', value: 0, status: 'New' });
   };
 
   if (!isLoggedIn) {
@@ -106,19 +136,11 @@ function App() {
           {error && <div className="error-alert">{error}</div>}
           <div className="input-group">
             <label>Email</label>
-            <input 
-              type="email" 
-              value={loginData.email} 
-              onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-            />
+            <input type="email" value={loginData.email} onChange={(e) => setLoginData({...loginData, email: e.target.value})} />
           </div>
           <div className="input-group">
             <label>Password</label>
-            <input 
-              type="password" 
-              value={loginData.password} 
-              onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-            />
+            <input type="password" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})} />
           </div>
           <button type="submit" disabled={loginLoading} className="primary-btn" style={{ width: '100%', justifyContent: 'center' }}>
             {loginLoading ? 'Authenticating...' : 'Sign In'}
@@ -142,10 +164,7 @@ function App() {
           <NavItem icon={<BarChart3 size={18} />} label="Analytics" active={currentView === 'analytics'} onClick={() => setCurrentView('analytics')} />
           <NavItem icon={<Settings size={18} />} label="Settings" active={currentView === 'settings'} onClick={() => setCurrentView('settings')} />
         </nav>
-        <div className="logout-zone" onClick={handleLogout}>
-          <LogOut size={18} />
-          <span>Sign Out</span>
-        </div>
+        <div className="logout-zone" onClick={handleLogout}><LogOut size={18} /><span>Sign Out</span></div>
       </aside>
 
       <main className="main-content">
@@ -154,9 +173,8 @@ function App() {
             <h1 className="view-title">{currentView.toUpperCase()}</h1>
             <p className="view-subtitle">System Management Interface</p>
           </div>
-          <button className="primary-btn" onClick={() => setShowAddModal(true)}>
-            <Plus size={18} />
-            <span>New Lead</span>
+          <button className="primary-btn" onClick={() => setShowModal(true)}>
+            <Plus size={18} /><span>New Lead</span>
           </button>
         </header>
 
@@ -168,19 +186,17 @@ function App() {
               <StatCard label="Conversion" value={`${stats.conversionRate}%`} trend="-0.2%" />
               <StatCard label="Deals Won" value={stats.wonLeads} trend="+2.1%" />
             </section>
-            <LeadTable leads={leads.slice(0, 5)} title="Recent Activity" />
+            <LeadTable leads={leads.slice(0, 5)} title="Recent Activity" onEdit={openEditModal} onDelete={handleDeleteLead} />
           </div>
         )}
 
         {currentView === 'leads' && (
           <div className="view-container animate-fade-in">
             <div className="filters-bar" style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
-              <div className="input-group" style={{ flex: 1, margin: 0 }}>
-                <input type="text" placeholder="Search by name, company or email..." />
-              </div>
-              <button className="secondary-btn">Search</button>
+              <div className="input-group" style={{ flex: 1, margin: 0 }}><input type="text" placeholder="Search records..." /></div>
+              <button className="secondary-btn">Filter</button>
             </div>
-            <LeadTable leads={leads} />
+            <LeadTable leads={leads} onEdit={openEditModal} onDelete={handleDeleteLead} />
           </div>
         )}
 
@@ -191,18 +207,33 @@ function App() {
         )}
       </main>
 
-      {showAddModal && (
+      {showModal && (
         <div className="modal-overlay">
           <div className="modal-content animate-fade-in">
-            <h2 style={{ marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Create Lead</h2>
-            <form onSubmit={handleAddLead}>
-              <div className="input-group"><label>Full Name</label><input type="text" value={newLead.name} onChange={(e) => setNewLead({...newLead, name: e.target.value})} required /></div>
-              <div className="input-group"><label>Email Address</label><input type="email" value={newLead.email} onChange={(e) => setNewLead({...newLead, email: e.target.value})} required /></div>
-              <div className="input-group"><label>Company</label><input type="text" value={newLead.company} onChange={(e) => setNewLead({...newLead, company: e.target.value})} required /></div>
-              <div className="input-group"><label>Value ($)</label><input type="number" value={newLead.value} onChange={(e) => setNewLead({...newLead, value: e.target.value})} required /></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>{editingLead ? 'Update Lead' : 'Create Lead'}</h2>
+              <X size={20} style={{ cursor: 'pointer' }} onClick={closeModal} />
+            </div>
+            <form onSubmit={handleLeadSubmit}>
+              <div className="input-group"><label>Full Name</label><input type="text" value={leadForm.name} onChange={(e) => setLeadForm({...leadForm, name: e.target.value})} required /></div>
+              <div className="input-group"><label>Email Address</label><input type="email" value={leadForm.email} onChange={(e) => setLeadForm({...leadForm, email: e.target.value})} required /></div>
+              <div className="input-row">
+                <div className="input-group"><label>Company</label><input type="text" value={leadForm.company} onChange={(e) => setLeadForm({...leadForm, company: e.target.value})} required /></div>
+                <div className="input-group"><label>Value ($)</label><input type="number" value={leadForm.value} onChange={(e) => setLeadForm({...leadForm, value: e.target.value})} required /></div>
+              </div>
+              <div className="input-group">
+                <label>Status</label>
+                <select value={leadForm.status} onChange={(e) => setLeadForm({...leadForm, status: e.target.value})}>
+                  <option value="New">New</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Qualified">Qualified</option>
+                  <option value="Lost">Lost</option>
+                  <option value="Won">Won</option>
+                </select>
+              </div>
               <div className="modal-actions">
-                <button type="button" className="secondary-btn" onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button type="submit" className="primary-btn">Create</button>
+                <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
+                <button type="submit" className="primary-btn">{editingLead ? 'Save Changes' : 'Create'}</button>
               </div>
             </form>
           </div>
@@ -224,11 +255,11 @@ const StatCard = ({ label, value, trend }) => (
   </div>
 );
 
-const LeadTable = ({ leads, title }) => (
+const LeadTable = ({ leads, title, onEdit, onDelete }) => (
   <div className="table-wrapper">
     {title && <div style={{ padding: '1.5rem', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{title}</div>}
     <table>
-      <thead><tr><th>Lead</th><th>Company</th><th>Status</th><th>Value</th><th></th></tr></thead>
+      <thead><tr><th>Lead</th><th>Company</th><th>Status</th><th>Value</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
       <tbody>
         {leads.length === 0 ? <tr><td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No records found.</td></tr> :
         leads.map(lead => (
@@ -237,7 +268,12 @@ const LeadTable = ({ leads, title }) => (
             <td className="company-info">{lead.company}</td>
             <td><span className={`badge badge-${lead.status.toLowerCase()}`}>{lead.status}</span></td>
             <td style={{ fontWeight: 700 }}>${lead.value?.toLocaleString()}</td>
-            <td><ArrowUpRight size={16} style={{ cursor: 'pointer', opacity: 0.5 }} /></td>
+            <td style={{ textAlign: 'right' }}>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <Edit2 size={16} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => onEdit(lead)} />
+                <Trash2 size={16} style={{ cursor: 'pointer', opacity: 0.5, color: 'var(--danger)' }} onClick={() => onDelete(lead._id)} />
+              </div>
+            </td>
           </tr>
         ))}
       </tbody>

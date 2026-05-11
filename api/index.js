@@ -122,7 +122,7 @@ app.post('/api/leads', auth, async (req, res) => {
   }
 });
 
-// Update Lead Status
+// Update Lead
 app.patch('/api/leads/:id', auth, async (req, res) => {
   try {
     await connectDB();
@@ -130,6 +130,18 @@ app.patch('/api/leads/:id', auth, async (req, res) => {
     res.send(lead);
   } catch (e) {
     res.status(400).send(e.message);
+  }
+});
+
+// Delete Lead
+app.delete('/api/leads/:id', auth, async (req, res) => {
+  try {
+    await connectDB();
+    const lead = await Lead.findByIdAndDelete(req.params.id);
+    if (!lead) return res.status(404).send();
+    res.send(lead);
+  } catch (e) {
+    res.status(500).send(e.message);
   }
 });
 
