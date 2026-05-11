@@ -9,6 +9,37 @@ import {
 } from 'lucide-react';
 import './index.css';
 
+const SEARCH_DATA = [
+  // Opportunities
+  { id: 'o1', type: 'Opportunity', title: 'Berkeley Heath Auto Centre', subtitle: 'Paul • GL13 9ET', icon: 'Target' },
+  { id: 'o2', type: 'Opportunity', title: 'Martin Richings Motor Repairs', subtitle: 'Martin • BS37 6AA', icon: 'Target' },
+  { id: 'o3', type: 'Opportunity', title: 'Motortech', subtitle: 'Steve • GL7 1YG', icon: 'Target' },
+  { id: 'o4', type: 'Opportunity', title: 'Circuit Motors Ltd', subtitle: 'SN14 7HB', icon: 'Target' },
+  { id: 'o5', type: 'Opportunity', title: 'Purley Road Garage', subtitle: 'GL7 1ER', icon: 'Target' },
+  { id: 'o6', type: 'Opportunity', title: 'OPD Auto Services Ltd', subtitle: 'GL6 7AS', icon: 'Target' },
+  { id: 'o7', type: 'Opportunity', title: 'Holbrook Garage', subtitle: 'Fam • GL6 7BX', icon: 'Target' },
+  { id: 'o8', type: 'Opportunity', title: 'Gloucester Centre for MG\'s', subtitle: 'GL10 2LA', icon: 'Target' },
+  
+  // Accounts
+  { id: 'a1', type: 'Account', title: 'Frankham Motor Services', subtitle: 'Drena • SN15 4NX', icon: 'Building2' },
+  { id: 'a2', type: 'Account', title: 'Ian Paull Car Repairs', subtitle: 'Cornwall', icon: 'Building2' },
+  
+  // Users
+  { id: 'u1', type: 'User', title: 'Vandan Popat', subtitle: '@vandan.p • ADMIN', icon: 'UserCircle' },
+  { id: 'u2', type: 'User', title: 'Oleksiy Radchenko', subtitle: '@oleksiy.r • ADMIN', icon: 'UserCircle' },
+  { id: 'u3', type: 'User', title: 'Janey Chudasama', subtitle: '@janey.c • ADMIN', icon: 'UserCircle' },
+  { id: 'u4', type: 'User', title: 'James King', subtitle: '@jimmybigburgers • ADMIN', icon: 'UserCircle' },
+  { id: 'u5', type: 'User', title: 'Aivi Verousi', subtitle: '@aivi.v • ADMIN', icon: 'UserCircle' },
+  { id: 'u6', type: 'User', title: 'Aaron wake', subtitle: '@aaron • BDM', icon: 'UserCircle' },
+  { id: 'u7', type: 'User', title: 'Umair', subtitle: '@mr.umairnaseer • ADMIN', icon: 'UserCircle' },
+
+  // Appointments
+  { id: 'ap1', type: 'Appointment', title: '7a Coffee Shop', subtitle: 'Callback • 9:00 AM', icon: 'Calendar' },
+  { id: 'ap2', type: 'Appointment', title: 'Nile Valley Cafe', subtitle: 'Appointment', icon: 'Calendar' },
+  { id: 'ap3', type: 'Appointment', title: 'Hush Hair & Beauty', subtitle: 'Appointment', icon: 'Calendar' },
+  { id: 'ap4', type: 'Appointment', title: 'Sarah\'s Cake Shop', subtitle: 'Appointment', icon: 'Calendar' },
+];
+
 function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -823,6 +854,14 @@ const AddOpportunityModal = ({ onClose }) => (
 const SearchPopup = ({ onClose }) => {
   const [query, setQuery] = useState('');
 
+  const results = query.length >= 2 
+    ? SEARCH_DATA.filter(item => 
+        item.title.toLowerCase().includes(query.toLowerCase()) || 
+        item.subtitle.toLowerCase().includes(query.toLowerCase()) ||
+        item.type.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
+
   return (
     <div className="search-popup-overlay" onClick={onClose}>
       <div className="search-popup-card" onClick={e => e.stopPropagation()}>
@@ -840,17 +879,39 @@ const SearchPopup = ({ onClose }) => {
           </button>
         </div>
         <div className="search-popup-body">
-          {!query ? (
+          {query.length < 2 ? (
             <div className="search-empty-state">
               <p>Type at least 2 characters to search...</p>
             </div>
+          ) : results.length > 0 ? (
+            <div className="search-results-list">
+              {results.map(result => (
+                <div key={result.id} className="search-result-item" onClick={onClose}>
+                  <div className="result-icon">
+                    {result.icon === 'Target' && <Target size={18} />}
+                    {result.icon === 'Building2' && <Building2 size={18} />}
+                    {result.icon === 'UserCircle' && <UserCircle size={18} />}
+                    {result.icon === 'Calendar' && <Calendar size={18} />}
+                  </div>
+                  <div className="result-info">
+                    <div className="result-title">{result.title}</div>
+                    <div className="result-subtitle">{result.subtitle}</div>
+                  </div>
+                  <div className="result-type">{result.type}</div>
+                </div>
+              ))}
+            </div>
           ) : (
-            <div className="search-results-placeholder">
-              <p>Searching for "{query}"...</p>
-              <div className="search-hint">No results found for this demo.</div>
+            <div className="search-empty-state">
+              <p>No results found for "{query}"</p>
             </div>
           )}
         </div>
+        {query.length >= 2 && results.length > 0 && (
+          <div className="search-popup-footer">
+            Showing {results.length} results
+          </div>
+        )}
       </div>
     </div>
   );
