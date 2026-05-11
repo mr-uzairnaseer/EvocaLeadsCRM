@@ -73,7 +73,6 @@ function App() {
               <div className="user-name">Umair</div>
               <div className="user-email">mr.umairnaseer@gmai...</div>
             </div>
-            <Bell size={20} color="#6b7280" style={{ cursor: 'pointer' }} />
           </div>
           
           <div className="logout-btn">
