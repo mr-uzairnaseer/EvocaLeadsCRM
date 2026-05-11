@@ -345,7 +345,9 @@ const DashboardView = ({ stats, onNavigate }) => (
           <ActivityItem user="Vandan Popat" text="ring out, no answer" time="May 11, 8:22 PM" />
         </div>
       </div>
-    </div>
+  </div>
+);
+
 const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode }) => {
   const opportunities = [
     { id: 1, business: 'Berkeley Heath Auto Centre', name: 'Paul', postcode: 'GL13 9ET', phone: '01453 511533', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
