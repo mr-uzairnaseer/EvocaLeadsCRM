@@ -310,58 +310,86 @@ const AddOpportunityModal = ({ onClose }) => (
   <div className="modal-overlay">
     <div className="modal-card">
       <div className="modal-header">
-        <h2>Add Opportunity</h2>
+        <h2>Add New Opportunity</h2>
         <button className="modal-close" onClick={onClose}><X size={20} /></button>
       </div>
-      <div className="modal-body">
+      <div className="modal-body-scrollable">
         <div className="form-grid">
           <div className="form-field">
-            <label>Business Name</label>
-            <input type="text" placeholder="e.g. Acme Corp" />
+            <label>Business Name *</label>
+            <input type="text" />
           </div>
           <div className="form-field">
             <label>Contact Name</label>
-            <input type="text" placeholder="e.g. John Doe" />
+            <input type="text" />
           </div>
           <div className="form-field">
-            <label>Phone Number</label>
-            <input type="text" placeholder="01234 567890" />
+            <label>Email</label>
+            <input type="email" />
+          </div>
+          <div className="form-field">
+            <label>Phone</label>
+            <input type="text" />
+          </div>
+          <div className="form-field full-width">
+            <label>Full Address</label>
+            <input type="text" />
+          </div>
+          <div className="form-field">
+            <label>Town / City</label>
+            <input type="text" />
           </div>
           <div className="form-field">
             <label>Postcode</label>
-            <input type="text" placeholder="e.g. GL1 1AA" />
+            <input type="text" />
           </div>
           <div className="form-field">
-            <label>Status</label>
+            <label>Business Type</label>
             <select className="form-select">
-              <option>New</option>
-              <option>Contacted</option>
-              <option>Qualified</option>
-              <option>Converted</option>
+              <option>Select business type</option>
             </select>
           </div>
           <div className="form-field">
-            <label>BDA Assigned</label>
-            <select className="form-select">
-              <option>Oleksiy Radchenko</option>
-              <option>Vandan Popat</option>
-              <option>Umair</option>
-            </select>
+            <label>Est. Monthly Volume</label>
+            <input type="text" placeholder="e.g. $50,000" />
           </div>
           <div className="form-field">
-            <label>BDM Assigned</label>
-            <select className="form-select">
-              <option>James King</option>
-              <option>Aaron wake</option>
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Callback Date</label>
-            <input type="date" />
-          </div>
-          <div className="form-field" style={{ gridColumn: 'span 2' }}>
             <label>Current Provider</label>
             <input type="text" placeholder="e.g. WorldPay" />
+          </div>
+          <div className="form-field">
+            <label>Rates</label>
+            <input type="text" placeholder="e.g. 1.5%" />
+          </div>
+          <div className="form-field full-width">
+            <label>Time Left in Contract</label>
+            <input type="text" placeholder="e.g. 6 months" />
+          </div>
+          <div className="form-field checkbox-field">
+            <input type="checkbox" id="epos" />
+            <label htmlFor="epos">EPOS / Integrated</label>
+          </div>
+          <div className="form-field checkbox-field">
+            <input type="checkbox" id="email-sent" />
+            <label htmlFor="email-sent">Email Sent</label>
+          </div>
+          <div className="form-field">
+            <label>Assign BDA</label>
+            <select className="form-select">
+              <option>Unassigned</option>
+              <option>Oleksiy Radchenko</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Assign BDM</label>
+            <select className="form-select">
+              <option>Unassigned</option>
+              <option>James King</option>
+            </select>
+          </div>
+          <div className="form-field full-width">
+            <label>Notes</label>
+            <textarea rows="4" placeholder="Add internal notes..."></textarea>
           </div>
         </div>
       </div>
