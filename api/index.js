@@ -55,15 +55,27 @@ app.get('/api/health', async (req, res) => {
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('Login attempt for:', req.body.email);
     await connectDB();
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(400).send({ error: 'Invalid credentials' });
+    
+    if (!user) {
+      console.log('Login failed: User not found');
+      return res.status(400).send({ error: 'Invalid email or password' });
     }
+    
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      console.log('Login failed: Password mismatch');
+      return res.status(400).send({ error: 'Invalid email or password' });
+    }
+    
+    console.log('Login successful for:', email);
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
     res.send({ user, token });
   } catch (e) {
+    console.error('Login Error:', e);
     res.status(500).send(e.message);
   }
 });
