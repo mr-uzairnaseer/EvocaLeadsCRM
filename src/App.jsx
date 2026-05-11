@@ -9,6 +9,8 @@ function App() {
   const [stats, setStats] = useState({ totalLeads: 0, wonLeads: 0, totalValue: 0, conversionRate: 0 });
   const [loading, setLoading] = useState(true);
   const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -42,24 +44,31 @@ function App() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoginLoading(true);
+    setError('');
     try {
-      // First, trigger auto-seed to ensure admin exists
+      // Ensure DB is seeded
+      console.log('Checking system health...');
       await fetch(`${API_URL}/health`);
 
+      console.log('Attempting login...');
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
       });
+      
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('token', data.token);
         setIsLoggedIn(true);
       } else {
-        alert(data.error || 'Login failed');
+        setError(data.error || 'Invalid email or password');
       }
     } catch (err) {
-      alert('Connection error');
+      setError('Connection failed. Please check your internet and Vercel environment variables.');
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -73,6 +82,7 @@ function App() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <form onSubmit={handleLogin} className="glass card animate-fade-in" style={{ width: '400px', padding: '3rem' }}>
           <h2 style={{ color: 'var(--primary)', marginBottom: '1.5rem', textAlign: 'center' }}>LeadsCRM Login</h2>
+          {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
             <input 
@@ -91,7 +101,9 @@ function App() {
               required 
             />
           </div>
-          <button type="submit" style={{ width: '100%' }}>Enter Dashboard</button>
+          <button type="submit" disabled={loginLoading} style={{ width: '100%', opacity: loginLoading ? 0.7 : 1 }}>
+            {loginLoading ? 'Checking system...' : 'Enter Dashboard'}
+          </button>
           <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
             Default: admin@leadscrm.com / admin_password_123
           </p>
