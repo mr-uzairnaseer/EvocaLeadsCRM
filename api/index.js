@@ -149,17 +149,28 @@ app.delete('/api/leads/:id', auth, async (req, res) => {
 app.get('/api/stats', auth, async (req, res) => {
   try {
     await connectDB();
-    const totalLeads = await Lead.countDocuments();
-    const wonLeads = await Lead.countDocuments({ status: 'Won' });
-    const totalValue = await Lead.aggregate([
-      { $group: { _id: null, total: { $sum: "$value" } } }
-    ]);
+    const leads = await Lead.find();
+    
+    const pipeline = {
+      New: leads.filter(l => l.status === 'New').length,
+      Contacted: leads.filter(l => l.status === 'Contacted').length,
+      Qualified: leads.filter(l => l.status === 'Qualified').length,
+      Booked: leads.filter(l => l.status === 'Booked').length,
+      Approved: leads.filter(l => l.status === 'Approved').length,
+      Delivered: leads.filter(l => l.status === 'Delivered').length,
+      Transacting: leads.filter(l => l.status === 'Transacting').length,
+      NonTrans: leads.filter(l => l.status === 'Non-Trans').length,
+    };
+
+    const totalValue = leads.reduce((sum, l) => sum + (l.value || 0), 0);
+    const transactingCount = pipeline.Transacting;
     
     res.send({
-      totalLeads,
-      wonLeads,
-      conversionRate: totalLeads ? (wonLeads / totalLeads * 100).toFixed(1) : 0,
-      totalValue: totalValue[0]?.total || 0
+      totalLeads: leads.length,
+      totalValue,
+      pipeline,
+      conversionRate: leads.length ? Math.round((transactingCount / leads.length) * 100) : 0,
+      wonLeads: transactingCount
     });
   } catch (e) {
     res.status(500).send(e.message);

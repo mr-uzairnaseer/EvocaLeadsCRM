@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, LayoutDashboard, BarChart3, Settings, 
-  Plus, LogOut, Search,
-  Building2, ArrowUpRight, Trash2, Edit2, X
+  Plus, LogOut, Search, Calendar,
+  Building2, ArrowRight, UserCircle, Bell, Moon,
+  Target, Handshake, CheckSquare, RefreshCw, Box, Truck, AlertCircle
 } from 'lucide-react';
 import './index.css';
 
@@ -12,17 +13,17 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [currentView, setCurrentView] = useState('dashboard');
   const [leads, setLeads] = useState([]);
-  const [stats, setStats] = useState({ totalLeads: 0, wonLeads: 0, totalValue: 0, conversionRate: 0 });
+  const [stats, setStats] = useState({ 
+    totalLeads: 0, 
+    totalValue: 0, 
+    pipeline: { New: 0, Contacted: 0, Qualified: 0, Booked: 0, Approved: 0, Delivered: 0, Transacting: 0, NonTrans: 0 },
+    conversionRate: 0 
+  });
   const [loading, setLoading] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState('');
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
   
-  // Lead States
-  const [showModal, setShowModal] = useState(false);
-  const [editingLead, setEditingLead] = useState(null);
-  const [leadForm, setLeadForm] = useState({ name: '', email: '', company: '', value: 0, status: 'New' });
-
   useEffect(() => {
     if (isLoggedIn) fetchData();
   }, [isLoggedIn]);
@@ -75,63 +76,13 @@ function App() {
     setIsLoggedIn(false);
   };
 
-  const handleLeadSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
-    const method = editingLead ? 'PATCH' : 'POST';
-    const url = editingLead ? `${API_URL}/leads/${editingLead._id}` : `${API_URL}/leads`;
-
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(leadForm)
-      });
-      if (res.ok) {
-        closeModal();
-        fetchData();
-      }
-    } catch (err) {
-      alert('Error saving lead');
-    }
-  };
-
-  const handleDeleteLead = async (id) => {
-    if (!window.confirm('Delete this lead?')) return;
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/leads/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) fetchData();
-    } catch (err) {
-      alert('Error deleting');
-    }
-  };
-
-  const openEditModal = (lead) => {
-    setEditingLead(lead);
-    setLeadForm({ ...lead });
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingLead(null);
-    setLeadForm({ name: '', email: '', company: '', value: 0, status: 'New' });
-  };
-
   if (!isLoggedIn) {
     return (
       <div className="login-screen">
         <form onSubmit={handleLogin} className="login-card animate-fade-in">
-          <div className="brand" style={{ justifyContent: 'center' }}>
-            <div className="brand-logo"><LayoutDashboard size={20} /></div>
-            <span>LeadsCRM</span>
+          <div className="brand" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
+            <div className="brand-logo" style={{ background: '#2563eb' }}><Box size={24} /></div>
+            <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>Zen Hub</span>
           </div>
           {error && <div className="error-alert">{error}</div>}
           <div className="input-group">
@@ -142,9 +93,10 @@ function App() {
             <label>Password</label>
             <input type="password" value={loginData.password} onChange={(e) => setLoginData({...loginData, password: e.target.value})} />
           </div>
-          <button type="submit" disabled={loginLoading} className="primary-btn" style={{ width: '100%', justifyContent: 'center' }}>
+          <button type="submit" disabled={loginLoading} className="primary-btn" style={{ width: '100%', justifyContent: 'center', background: '#2563eb' }}>
             {loginLoading ? 'Authenticating...' : 'Sign In'}
           </button>
+          <div className="login-footer">admin@leadscrm.com / admin_password_123</div>
         </form>
       </div>
     );
@@ -154,130 +106,209 @@ function App() {
     <div className="app-container">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-logo"><LayoutDashboard size={20} /></div>
-          <span>LeadsCRM</span>
+          <div className="brand-logo" style={{ background: '#2563eb' }}><Box size={18} /></div>
+          <span style={{ fontWeight: 800 }}>Zen Hub</span>
         </div>
+        
+        <div className="nav-section-label">Navigation</div>
         <nav className="nav-menu">
           <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" active={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
-          <NavItem icon={<Users size={18} />} label="Leads" active={currentView === 'leads'} onClick={() => setCurrentView('leads')} />
-          <NavItem icon={<BarChart3 size={18} />} label="Analytics" active={currentView === 'analytics'} onClick={() => setCurrentView('analytics')} />
-          <NavItem icon={<Settings size={18} />} label="Settings" active={currentView === 'settings'} onClick={() => setCurrentView('settings')} />
+          <NavItem icon={<Target size={18} />} label="Opportunities" active={currentView === 'leads'} onClick={() => setCurrentView('leads')} />
+          <NavItem icon={<Users size={18} />} label="Accounts" />
+          <NavItem icon={<UserCircle size={18} />} label="Contact" />
+          <NavItem icon={<Calendar size={18} />} label="Calendar" />
         </nav>
-        <div className="logout-zone" onClick={handleLogout}><LogOut size={18} /><span>Sign Out</span></div>
+
+        <div className="nav-section-label">Admin</div>
+        <nav className="nav-menu">
+          <NavItem icon={<Users size={18} />} label="Users" />
+        </nav>
+
+        <div className="nav-section-label">Team</div>
+        <div className="team-list">
+          <TeamItem name="Vandan Popat" online />
+          <TeamItem name="Oleksiy Radchenko" online />
+          <TeamItem name="Janey Chudasama" online />
+          <TeamItem name="James King" online />
+          <TeamItem name="Umair" online />
+        </div>
+
+        <div className="user-profile">
+          <div className="avatar">U</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: '0.8125rem' }}>Umair</div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis' }}>mr.umairnaseer@gmai...</div>
+          </div>
+          <Bell size={16} color="#6b7280" />
+        </div>
+        
+        <div className="logout-zone" onClick={handleLogout}>
+          <LogOut size={18} />
+          <span>Log out</span>
+        </div>
       </aside>
 
       <main className="main-content">
-        <header className="main-header">
-          <div>
-            <h1 className="view-title">{currentView.toUpperCase()}</h1>
-            <p className="view-subtitle">System Management Interface</p>
+        <header className="header-bar">
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <Box size={20} color="#6b7280" />
+            <div className="search-container">
+              <Search size={18} color="#9ca3af" />
+              <input type="text" placeholder="Search everything..." />
+              <div style={{ color: '#9ca3af', fontSize: '0.75rem' }}>⌘ K</div>
+            </div>
           </div>
-          <button className="primary-btn" onClick={() => setShowModal(true)}>
-            <Plus size={18} /><span>New Lead</span>
-          </button>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <Moon size={18} color="#6b7280" />
+          </div>
         </header>
 
         {currentView === 'dashboard' && (
-          <div className="view-container animate-fade-in">
-            <section className="stats-grid">
-              <StatCard label="Revenue" value={`$${stats.totalValue?.toLocaleString()}`} trend="+12% YoY" />
-              <StatCard label="Leads" value={stats.totalLeads} trend="+5.4%" />
-              <StatCard label="Conversion" value={`${stats.conversionRate}%`} trend="-0.2%" />
-              <StatCard label="Deals Won" value={stats.wonLeads} trend="+2.1%" />
+          <div className="animate-fade-in">
+            <section className="stats-row">
+              <StatCardSmall label="Opportunities" value={stats.totalLeads} sub="Active in pipeline" icon={<Target size={16} />} />
+              <StatCardSmall label="Appointments" value={stats.pipeline.Booked} sub="Total" icon={<Calendar size={16} />} />
+              <StatCardSmall label="Sold" value={stats.pipeline.Approved} sub="Total accounts" icon={<Handshake size={16} />} />
+              <StatCardSmall label="Transacting" value={stats.pipeline.Transacting} sub="Live accounts" icon={<RefreshCw size={16} />} />
+              <StatCardSmall label="Conversion" value={`${stats.conversionRate}%`} sub="Opp to account" icon={<BarChart3 size={16} />} />
+              <StatCardSmall label="CC:Sale" value="10721:1" sub="Calls to sale" icon={<Phone size={16} />} />
             </section>
-            <LeadTable leads={leads.slice(0, 5)} title="Recent Activity" onEdit={openEditModal} onDelete={handleDeleteLead} />
+
+            <section className="pipeline-container">
+              <div className="pipeline-header">
+                <span>Pipeline</span>
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</span>
+              </div>
+              <div className="pipeline-flow">
+                <PipelineStep label="New" count={stats.pipeline.New} />
+                <PipelineStep label="Contacted" count={stats.pipeline.Contacted} />
+                <PipelineStep label="Qualified" count={stats.pipeline.Qualified} />
+                <PipelineStep label="Booked" count={stats.pipeline.Booked} />
+                <PipelineStep label="Approved" count={stats.pipeline.Approved} />
+                <PipelineStep label="Delivered" count={stats.pipeline.Delivered} />
+                <PipelineStep label="Transacting" count={stats.pipeline.Transacting} />
+                <PipelineStep label="Non-Trans." count={stats.pipeline.NonTrans} isLast />
+              </div>
+            </section>
+
+            <div className="dashboard-grid">
+              <section className="grid-section">
+                <div className="section-title">
+                  <span>Recent Opportunities</span>
+                  <span style={{ fontSize: '0.8125rem', color: '#2563eb', cursor: 'pointer' }}>View All</span>
+                </div>
+                <div className="opportunity-list">
+                  {leads.slice(0, 5).map(lead => (
+                    <div key={lead._id} className="opportunity-item">
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{lead.company}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{lead.name}</div>
+                      </div>
+                      <span className="badge-new-tag">new</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="grid-section">
+                <div className="section-title">
+                  <span>Recent Activity</span>
+                  <RefreshCw size={16} color="#6b7280" />
+                </div>
+                <div className="activity-list">
+                  <ActivityItem user="Oleksiy Radchenko" text="owner not in, callbacks cheduled" time="May 11, 8:36 PM" />
+                  <ActivityItem user="System" text={`New lead created: ${leads[0]?.company || 'Pending'}`} time="May 11, 8:36 PM" />
+                  <ActivityItem user="Oleksiy Radchenko" text="call back arranged" time="May 11, 8:24 PM" />
+                </div>
+              </section>
+            </div>
           </div>
         )}
 
         {currentView === 'leads' && (
-          <div className="view-container animate-fade-in">
-            <div className="filters-bar" style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
-              <div className="input-group" style={{ flex: 1, margin: 0 }}><input type="text" placeholder="Search records..." /></div>
-              <button className="secondary-btn">Filter</button>
-            </div>
-            <LeadTable leads={leads} onEdit={openEditModal} onDelete={handleDeleteLead} />
-          </div>
-        )}
-
-        {(currentView === 'analytics' || currentView === 'settings') && (
-          <div className="view-container animate-fade-in" style={{ padding: '4rem', textAlign: 'center', border: '1px dashed var(--border)' }}>
-            <p style={{ color: 'var(--text-muted)' }}>This module is scheduled for the next deployment phase.</p>
+          <div className="animate-fade-in">
+             <div className="grid-section" style={{ minHeight: '600px' }}>
+                <div className="section-title">
+                  <span>All Opportunities</span>
+                  <button className="primary-btn" style={{ background: '#2563eb' }}><Plus size={16} /> New Lead</button>
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                   <thead>
+                      <tr style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
+                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>Company</th>
+                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>Status</th>
+                        <th style={{ padding: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>Value</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {leads.map(lead => (
+                        <tr key={lead._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ fontWeight: 600 }}>{lead.company}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{lead.name}</div>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <span className="badge-new-tag" style={{ background: '#f3f4f6', color: '#4b5563' }}>{lead.status}</span>
+                          </td>
+                          <td style={{ padding: '1rem', fontWeight: 600 }}>${lead.value?.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
           </div>
         )}
       </main>
-
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>{editingLead ? 'Update Lead' : 'Create Lead'}</h2>
-              <X size={20} style={{ cursor: 'pointer' }} onClick={closeModal} />
-            </div>
-            <form onSubmit={handleLeadSubmit}>
-              <div className="input-group"><label>Full Name</label><input type="text" value={leadForm.name} onChange={(e) => setLeadForm({...leadForm, name: e.target.value})} required /></div>
-              <div className="input-group"><label>Email Address</label><input type="email" value={leadForm.email} onChange={(e) => setLeadForm({...leadForm, email: e.target.value})} required /></div>
-              <div className="input-row">
-                <div className="input-group"><label>Company</label><input type="text" value={leadForm.company} onChange={(e) => setLeadForm({...leadForm, company: e.target.value})} required /></div>
-                <div className="input-group"><label>Value ($)</label><input type="number" value={leadForm.value} onChange={(e) => setLeadForm({...leadForm, value: e.target.value})} required /></div>
-              </div>
-              <div className="input-group">
-                <label>Status</label>
-                <select value={leadForm.status} onChange={(e) => setLeadForm({...leadForm, status: e.target.value})}>
-                  <option value="New">New</option>
-                  <option value="Contacted">Contacted</option>
-                  <option value="Qualified">Qualified</option>
-                  <option value="Lost">Lost</option>
-                  <option value="Won">Won</option>
-                </select>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="secondary-btn" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="primary-btn">{editingLead ? 'Save Changes' : 'Create'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 const NavItem = ({ icon, label, active, onClick }) => (
-  <div className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>{icon}<span>{label}</span></div>
-);
-
-const StatCard = ({ label, value, trend }) => (
-  <div className="stat-card">
-    <div className="stat-label">{label}</div>
-    <div className="stat-value">{value}</div>
-    <div className="stat-trend">{trend}</div>
+  <div className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
+    {icon}
+    <span style={{ flex: 1 }}>{label}</span>
+    {active && <ArrowRight size={14} style={{ opacity: 0.5 }} />}
   </div>
 );
 
-const LeadTable = ({ leads, title, onEdit, onDelete }) => (
-  <div className="table-wrapper">
-    {title && <div style={{ padding: '1.5rem', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{title}</div>}
-    <table>
-      <thead><tr><th>Lead</th><th>Company</th><th>Status</th><th>Value</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
-      <tbody>
-        {leads.length === 0 ? <tr><td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No records found.</td></tr> :
-        leads.map(lead => (
-          <tr key={lead._id}>
-            <td><div className="lead-name">{lead.name}</div><div className="lead-email">{lead.email}</div></td>
-            <td className="company-info">{lead.company}</td>
-            <td><span className={`badge badge-${lead.status.toLowerCase()}`}>{lead.status}</span></td>
-            <td style={{ fontWeight: 700 }}>${lead.value?.toLocaleString()}</td>
-            <td style={{ textAlign: 'right' }}>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <Edit2 size={16} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => onEdit(lead)} />
-                <Trash2 size={16} style={{ cursor: 'pointer', opacity: 0.5, color: 'var(--danger)' }} onClick={() => onDelete(lead._id)} />
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+const TeamItem = ({ name, online }) => (
+  <div className="team-item">
+    <div className={`status-dot ${online ? 'status-online' : 'status-offline'}`}></div>
+    <span>{name}</span>
   </div>
+);
+
+const StatCardSmall = ({ label, value, sub, icon }) => (
+  <div className="stat-card-new">
+    <div className="stat-card-header">
+      <span>{label}</span>
+      {icon}
+    </div>
+    <div className="stat-card-value">{value}</div>
+    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{sub}</div>
+    <a href="#" className="stat-card-link">View <ArrowRight size={12} /></a>
+  </div>
+);
+
+const PipelineStep = ({ label, count, isLast }) => (
+  <div className="pipeline-step">
+    <div className="pipeline-count">{count}</div>
+    <div className="pipeline-label">{label}</div>
+  </div>
+);
+
+const ActivityItem = ({ user, text, time }) => (
+  <div className="activity-item">
+    <div className="activity-dot"></div>
+    <div className="activity-content">
+      <div className="activity-text"><span style={{ fontWeight: 700 }}>{user}</span>: {text}</div>
+      <div className="activity-time">{time}</div>
+    </div>
+  </div>
+);
+
+const Phone = ({ size, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
 );
 
 export default App;
