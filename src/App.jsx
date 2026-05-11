@@ -1313,115 +1313,134 @@ const LeadDetailsView = ({ lead, onBack }) => {
 
   return (
     <div className="page-content">
-      <header className="details-header-main">
-        <button className="back-btn-circle" onClick={onBack}>
-          <ChevronLeft size={20} />
-        </button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '4px' }}>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{lead.name}</h1>
-            <span className="status-badge-new">New Lead</span>
+      <header className="lead-details-header">
+        <div className="lead-header-left">
+          <button className="back-btn" onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
+            <ChevronLeft size={24} color="#111827" />
+          </button>
+          <div className="lead-title-group">
+            <h2>{lead.name}</h2>
+            <p>{lead.contact}</p>
           </div>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem', fontWeight: 500 }}>
-            ID: OPP-21354 • Created May 11, 2026 • Assigned to {lead.bda}
-          </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn-secondary" style={{ height: '42px' }}><Edit3 size={16} /> Edit Details</button>
-          <button className="btn-primary" style={{ height: '42px', padding: '0 1.5rem' }}>Take Ownership</button>
+        <div className="lead-header-right">
+          <span className="status-badge-new" style={{ padding: '6px 16px', borderRadius: '8px' }}>new</span>
+          <button className="trash-btn"><Trash2 size={20} /></button>
         </div>
       </header>
 
-      <div className="details-grid">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="details-section">
-            <div className="card-header" style={{ marginBottom: '1.5rem' }}>
-              <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Lead Information</div>
-              <Building size={16} color="#94a3b8" />
+      <div className="lead-stepper">
+        <div className="step-line"></div>
+        <div className="step-line-active"></div>
+        <div className="step-item active">
+          <span className="step-label">New</span>
+        </div>
+        <div className="step-item">
+          <span className="step-label">Contacted</span>
+        </div>
+        <div className="step-item">
+          <span className="step-label">Qualified</span>
+        </div>
+        <div className="step-item">
+          <span className="step-label">Converted</span>
+        </div>
+      </div>
+
+      <div className="lead-grid-cols">
+        <div className="details-card">
+          <div className="card-title-row">
+            <h3>Contact Details</h3>
+            <Edit3 size={18} color="#6b7280" style={{ cursor: 'pointer' }} />
+          </div>
+          <div className="contact-info-list">
+            <div className="contact-info-item">
+              <Phone size={18} />
+              <span>{lead.phone}</span>
             </div>
-            <div className="form-grid">
-              <div className="form-field">
-                <div className="info-label">Contact Name</div>
-                <div className="info-value">{lead.contact}</div>
-              </div>
-              <div className="form-field">
-                <div className="info-label">Postcode / Address</div>
-                <div className="info-value">{lead.address}</div>
-              </div>
-              <div className="form-field">
-                <div className="info-label">Phone Number</div>
-                <div className="info-value link">
-                  {lead.phone} <Phone size={14} />
-                </div>
-              </div>
-              <div className="form-field">
-                <div className="info-label">Email Address</div>
-                <div className="info-value">{lead.email}</div>
-              </div>
-              <div className="form-field">
-                <div className="info-label">Assigned BDA</div>
-                <div className="info-value">{lead.bda}</div>
-              </div>
-              <div className="form-field">
-                <div className="info-label">Assigned BDM</div>
-                <div className="info-value">{lead.bdm}</div>
-              </div>
+            <div className="contact-info-item">
+              <Building size={18} />
+              <span>A38, Berkeley Heath, Berkeley, GL13 9ET, Berkeley, GL13 9ET</span>
             </div>
           </div>
-
-          <div className="details-section">
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Internal Notes</div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>Add Note</div>
+          <div className="field-group">
+            <div className="field-label">Business Type</div>
+            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
+              <span>Automotive</span>
+              <ChevronDown size={14} />
             </div>
-            <textarea 
-              placeholder="Add a private note for the team..." 
-              style={{ 
-                width: '100%', minHeight: '120px', padding: '1rem', 
-                border: '1px solid #f1f5f9', borderRadius: '10px', 
-                background: '#f8fafc', resize: 'none', fontSize: '0.875rem',
-                outline: 'none', border: '1px solid #e2e8f0'
-              }}
-            ></textarea>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-              <button className="btn-primary" style={{ height: '36px', fontSize: '0.8125rem', padding: '0 1.25rem' }}>Save Note</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+            <div className="contact-info-item" style={{ fontSize: '0.875rem' }}>
+              <UserCircle size={18} />
+              <span>BDA: {lead.bda}</span>
+            </div>
+            <div className="contact-info-item" style={{ fontSize: '0.875rem' }}>
+              <UserCircle size={18} />
+              <span>BDM: {lead.bdm}</span>
             </div>
           </div>
         </div>
 
-        <div className="details-section">
-          <div className="card-header" style={{ marginBottom: '1rem' }}>
-            <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Activity Timeline</div>
-            <Activity size={16} color="#94a3b8" />
+        <div className="details-card">
+          <div className="card-title-row">
+            <h3>Actions</h3>
           </div>
-          <div className="details-timeline">
-            <div className="timeline-event">
-              <div className="timeline-dot"></div>
-              <div className="timeline-content">
-                <div className="timeline-text">Lead details updated</div>
-                <div className="timeline-time">System • 1 hour ago</div>
-              </div>
+          <div className="field-group">
+            <div className="field-label">Status</div>
+            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
+              <span>New</span>
+              <ChevronDown size={14} />
             </div>
-            <div className="timeline-event">
-              <div className="timeline-dot"></div>
-              <div className="timeline-content">
-                <div className="timeline-text">First call attempt - no answer</div>
-                <div className="timeline-time">Oleksiy Radchenko • 2 hours ago</div>
-              </div>
+          </div>
+          <div className="field-group">
+            <div className="field-label">Assigned BDA</div>
+            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
+              <span>{lead.bda}</span>
+              <ChevronDown size={14} />
             </div>
-            <div className="timeline-event">
-              <div className="timeline-dot"></div>
-              <div className="timeline-content">
-                <div className="timeline-text">New lead created in pipeline</div>
-                <div className="timeline-time">System • May 11, 8:36 PM</div>
-              </div>
+          </div>
+          <div className="field-group">
+            <div className="field-label">Assigned BDM</div>
+            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
+              <span>{lead.bdm}</span>
+              <ChevronDown size={14} />
             </div>
-            <div className="timeline-event" style={{ opacity: 0.5 }}>
-              <div className="timeline-dot" style={{ borderColor: '#e2e8f0' }}></div>
-              <div className="timeline-content">
-                <div className="timeline-text">Data imported via CSV</div>
-                <div className="timeline-time">System • May 11, 8:30 PM</div>
-              </div>
+          </div>
+          <button className="action-btn-white">
+            <Calendar size={18} /> Update Callback
+          </button>
+          <div className="callback-info-box">
+            <Calendar size={16} /> Callback: 18/05/2026 9:30 AM
+          </div>
+          <button className="btn-convert">
+            <PlayCircle size={20} /> Convert to Lead
+          </button>
+        </div>
+      </div>
+
+      <div className="activity-history-card">
+        <div className="card-title-row">
+          <h3>Activity History</h3>
+        </div>
+        <div className="note-input-container">
+          <textarea className="note-textarea" placeholder="Add a note..."></textarea>
+          <button className="note-send-btn">
+            <MessageSquare size={18} />
+          </button>
+        </div>
+        <div className="history-timeline">
+          <div className="history-item">
+            <div className="history-dot"></div>
+            <div className="history-content">
+              <div className="history-text">Oleksiy Radchenko: owner not in, callbacks cheduled</div>
+              <div className="history-time">May 11, 8:36 PM</div>
+            </div>
+          </div>
+          <div className="history-item">
+            <div className="history-dot"></div>
+            <div className="history-content">
+              <div className="history-text">New lead created: Berkeley Heath Auto Centre</div>
+              <div className="history-time">May 11, 8:36 PM</div>
             </div>
           </div>
         </div>
