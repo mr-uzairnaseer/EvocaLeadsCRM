@@ -4,12 +4,12 @@ import {
   Calendar, ChevronRight, LogOut, Bell, User,
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
-  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download
+  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building
 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Accounts');
+  const [activeTab, setActiveTab] = useState('Contact');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -48,9 +48,13 @@ function App() {
               <span>Accounts</span>
               {activeTab === 'Accounts' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
-            <div className="nav-item">
+            <div 
+              className={`nav-item ${activeTab === 'Contact' ? 'active' : ''}`}
+              onClick={() => setActiveTab('Contact')}
+            >
               <div className="nav-item-icon"><UserCircle size={18} /></div>
               <span>Contact</span>
+              {activeTab === 'Contact' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
             <div className="nav-item">
               <div className="nav-item-icon"><Calendar size={18} /></div>
@@ -118,6 +122,7 @@ function App() {
         {activeTab === 'Dashboard' && <DashboardView />}
         {activeTab === 'Opportunities' && <OpportunitiesView onAdd={() => setShowAddModal(true)} onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
+        {activeTab === 'Contact' && <ContactView />}
       </main>
 
       {/* Modals */}
@@ -383,6 +388,70 @@ const AccountsView = ({ onImport }) => {
     </div>
   );
 };
+
+const ContactView = () => {
+  const [activeTab, setActiveTab] = useState('All');
+
+  return (
+    <div className="page-content">
+      <header className="page-header">
+        <h1>Contact</h1>
+        <p>20822 contacts across opportunities and accounts</p>
+      </header>
+
+      <div className="filters-bar">
+        <div className="filter-search">
+          <Search size={16} color="#94a3b8" />
+          <input type="text" placeholder="Search contacts..." />
+        </div>
+
+        <div className="tab-toggle">
+          {['All', 'Opportunities', 'Accounts'].map(tab => (
+            <button 
+              key={tab} 
+              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="contact-list">
+        <ContactCard initial="P" name="Paul" business="Berkeley Heath Auto Centre" phone="01453 511533" type="Opportunity" />
+        <ContactCard initial="M" name="Martin" business="Martin Richings Motor Repairs" phone="01454 311663" type="Opportunity" />
+        <ContactCard initial="S" name="Steve" business="Motortech" phone="" type="Opportunity" />
+        <ContactCard initial="" name="" business="Circuit Motors Ltd" phone="01249 782596" type="Opportunity" />
+        <ContactCard initial="" name="" business="Purley Road Garage" phone="01285 652365" type="Opportunity" />
+        <ContactCard initial="" name="" business="OPD Auto Services Ltd" phone="01452 771009" type="Opportunity" />
+        <ContactCard initial="F" name="Fam" business="Holbrook Garage" phone="01452 770272" type="Opportunity" />
+      </div>
+    </div>
+  );
+};
+
+const ContactCard = ({ initial, name, business, phone, type }) => (
+  <div className="contact-card">
+    <div className="contact-avatar">{initial}</div>
+    <div className="contact-main">
+      <div className="contact-name">{name || business}</div>
+      <div className="contact-business">
+        <Building size={14} color="#94a3b8" />
+        <span>{business}</span>
+      </div>
+    </div>
+    <div className="contact-right">
+      {phone && (
+        <div className="contact-phone">
+          <Phone size={14} />
+          <span>{phone}</span>
+        </div>
+      )}
+      <span className="status-badge approved">{type}</span>
+    </div>
+  </div>
+);
 
 const AccountRow = ({ business, contact, phone, postcode, status, volume, mid }) => (
   <tr>
