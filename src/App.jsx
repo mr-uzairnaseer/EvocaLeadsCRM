@@ -66,7 +66,8 @@ function App() {
         setError(data.error || 'Invalid email or password');
       }
     } catch (err) {
-      setError('Connection failed. Please check your internet and Vercel environment variables.');
+      console.error('Login error details:', err);
+      setError(`Connection failed: ${err.message || 'Unknown error'}. Check if the API is running.`);
     } finally {
       setLoginLoading(false);
     }
