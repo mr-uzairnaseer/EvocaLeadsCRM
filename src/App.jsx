@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Users, LayoutDashboard, Target, Building2, UserCircle, 
   Calendar, ChevronRight, LogOut, Bell, User,
-  PanelLeft, Search, Moon, BarChart3, RefreshCw, 
+  PanelLeft, Search, Moon, Sun, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
   Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building,
   MessageSquare, Eye, PlayCircle, Clock, Mail, Edit3, UserPlus, Key, Trash2
@@ -13,9 +13,12 @@ function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isDarkMode ? 'dark' : ''}`}>
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -124,7 +127,9 @@ function App() {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="nav-action-btn"><Bell size={18} /></button>
-            <button className="nav-action-btn"><Moon size={18} /></button>
+            <button className="nav-action-btn" onClick={toggleDarkMode}>
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
         </header>
 
@@ -161,7 +166,7 @@ const DashboardView = () => (
     <section className="pipeline-section">
       <div className="pipeline-top">
         <div className="pipeline-title">Pipeline</div>
-        <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
+        <div className="pipeline-subtitle-meta"><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
       </div>
       <div className="pipeline-stepper">
         <PipelineStep num="21269" label="New" />
