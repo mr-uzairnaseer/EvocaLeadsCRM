@@ -256,6 +256,8 @@
 
 .filter-search input { flex: 1; border: none; outline: none; font-size: 0.875rem; }
 
+.dropdown-container { position: relative; }
+
 .filter-dropdown {
   background: white; border: 1px solid var(--border); border-radius: 8px; height: 40px;
   padding: 0 1rem; display: flex; align-items: center; gap: 10px; font-size: 0.875rem;
@@ -263,6 +265,35 @@
 }
 
 .filter-dropdown:hover { background: #f9fafb; }
+
+.custom-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 220px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  padding: 4px;
+}
+
+.dropdown-item {
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover { background: #f1f5f9; }
+.dropdown-item.active { background: #f1f5f9; color: #2563eb; font-weight: 600; }
 
 .view-toggle {
   display: flex;
@@ -331,7 +362,49 @@
 
 .sort-icon { opacity: 0.3; margin-left: 4px; }
 
-/* Dashboard Components (From previous steps) */
+/* Pagination Bar */
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 0;
+  margin-top: 0.5rem;
+}
+
+.pagination-info {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.page-nav-btn {
+  background: white; border: 1px solid var(--border); border-radius: 8px; height: 36px;
+  padding: 0 0.875rem; display: flex; align-items: center; gap: 8px; font-size: 0.8125rem;
+  font-weight: 600; color: #4b5563; cursor: pointer; transition: all 0.2s;
+}
+
+.page-nav-btn:hover { background: #f9fafb; border-color: #d1d5db; }
+
+.page-numbers { display: flex; align-items: center; gap: 4px; }
+
+.page-num-btn {
+  width: 32px; height: 32px; border-radius: 6px; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 600; color: #64748b; transition: all 0.2s;
+}
+
+.page-num-btn:hover { background: #f1f5f9; color: #1e293b; }
+.page-num-btn.active { background: #eff6ff; color: #2563eb; }
+
+.page-dots { font-size: 0.8125rem; color: #94a3b8; font-weight: 700; padding: 0 4px; }
+
+/* Dashboard Components */
 .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
 .stat-card { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; position: relative; }
 .stat-header { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }

@@ -4,12 +4,12 @@ import {
   Calendar, ChevronRight, LogOut, Bell, User,
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
-  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown
+  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft
 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState('Opportunities');
 
   return (
     <div className="app-container">
@@ -179,71 +179,122 @@ const DashboardView = () => (
   </div>
 );
 
-const OpportunitiesView = () => (
-  <div className="page-content">
-    <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <div>
-        <h1>Opportunities</h1>
-        <p>Manage your payment opportunities pipeline</p>
-      </div>
-      <div style={{ display: 'flex', gap: '0.75rem' }}>
-        <button className="btn-secondary"><Upload size={16} /> Import CSV</button>
-        <button className="btn-primary"><Plus size={16} /> Add Opportunity</button>
-      </div>
-    </header>
+const OpportunitiesView = () => {
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
-    <div className="filters-bar">
-      <div className="filter-search">
-        <Search size={16} color="#94a3b8" />
-        <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
+  return (
+    <div className="page-content">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>Opportunities</h1>
+          <p>Manage your payment opportunities pipeline</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn-secondary"><Upload size={16} /> Import CSV</button>
+          <button className="btn-primary"><Plus size={16} /> Add Opportunity</button>
+        </div>
+      </header>
+
+      <div className="filters-bar">
+        <div className="filter-search">
+          <Search size={16} color="#94a3b8" />
+          <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
+        </div>
+        
+        {/* Status Dropdown */}
+        <div className="dropdown-container">
+          <button className="filter-dropdown" onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
+            <Filter size={16} />
+            <span>All Status</span>
+            <ChevronDown size={14} />
+          </button>
+          {showStatusDropdown && (
+            <div className="custom-dropdown">
+              <div className="dropdown-item active"><Check size={16} /> All Status</div>
+              <div className="dropdown-item">New</div>
+              <div className="dropdown-item">Contacted</div>
+              <div className="dropdown-item">Qualified</div>
+              <div className="dropdown-item">Converted</div>
+              <div className="dropdown-item">Lost</div>
+            </div>
+          )}
+        </div>
+
+        {/* User Dropdown */}
+        <div className="dropdown-container">
+          <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
+            <UserCircle size={16} />
+            <span>All Users</span>
+            <ChevronDown size={14} />
+          </button>
+          {showUserDropdown && (
+            <div className="custom-dropdown">
+              <div className="dropdown-item active"><Check size={16} /> All Users</div>
+              <div className="dropdown-item">Vandan Popat</div>
+              <div className="dropdown-item">Oleksiy Radchenko</div>
+              <div className="dropdown-item">Janey Chudasama</div>
+              <div className="dropdown-item">James King</div>
+              <div className="dropdown-item">Aivi Verousi</div>
+              <div className="dropdown-item">Aaron wake</div>
+              <div className="dropdown-item">Umair</div>
+            </div>
+          )}
+        </div>
+
+        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
+        <div className="view-toggle">
+          <button className="view-btn"><Grid size={16} /></button>
+          <button className="view-btn active"><List size={16} /></button>
+        </div>
       </div>
-      <button className="filter-dropdown">
-        <Filter size={16} />
-        <span>All Status</span>
-        <ChevronDown size={14} />
-      </button>
-      <button className="filter-dropdown">
-        <UserCircle size={16} />
-        <span>All Users</span>
-        <ChevronDown size={14} />
-      </button>
-      <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
-      <div className="view-toggle">
-        <button className="view-btn"><Grid size={16} /></button>
-        <button className="view-btn active"><List size={16} /></button>
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" /></th>
+              <th>Business <BarChart3 size={12} className="sort-icon" /></th>
+              <th>Contact <BarChart3 size={12} className="sort-icon" /></th>
+              <th>Phone <BarChart3 size={12} className="sort-icon" /></th>
+              <th>Postcode <BarChart3 size={12} className="sort-icon" /></th>
+              <th>Status <BarChart3 size={12} className="sort-icon" /></th>
+              <th>BDA</th>
+              <th>BDM</th>
+              <th>Callback <BarChart3 size={12} className="sort-icon" /></th>
+              <th>Provider <BarChart3 size={12} className="sort-icon" /></th>
+            </tr>
+          </thead>
+          <tbody>
+            <TableRow business="Berkeley Heath Auto Centre" contact="Paul" phone="01453 511533" postcode="GL13 9ET" bda="Oleksiy Radchenko" bdm="James King" callback="18/05/26" provider="—" />
+            <TableRow business="Martin Richings Motor Repairs" contact="Martin" phone="01454 311663" postcode="BS37 6AA" bda="Oleksiy Radchenko" bdm="James King" callback="18/05/26" provider="WorldPay" />
+            <TableRow business="Motortech" contact="Steve" phone="—" postcode="GL7 1YG" bda="Oleksiy Radchenko" bdm="James King" callback="12/05/26" provider="—" />
+            <TableRow business="Circuit Motors Ltd" contact="—" phone="01249 782596" postcode="SN14 7HB" bda="Oleksiy Radchenko" bdm="James King" callback="27/05/26" provider="iZettle" />
+            <TableRow business="Purley Road Garage" contact="—" phone="01285 652365" postcode="GL7 1ER" bda="Oleksiy Radchenko" bdm="James King" callback="12/05/26" provider="—" />
+            <TableRow business="OPD Auto Services Ltd" contact="—" phone="01452 771009" postcode="GL6 7AS" bda="Oleksiy Radchenko" bdm="James King" callback="28/05/26" provider="WorldPay" />
+            <TableRow business="Holbrook Garage" contact="Fam" phone="01452 770272" postcode="GL6 7BX" bda="Oleksiy Radchenko" bdm="James King" callback="11/11/26" provider="HandyPay" />
+            <TableRow business="Gloucester Centre for MG's" contact="—" phone="01453 825164" postcode="GL10 2LA" bda="Oleksiy Radchenko" bdm="James King" callback="19/05/26" provider="—" />
+          </tbody>
+        </table>
+      </div>
+
+      <div className="pagination-bar">
+        <div className="pagination-info">Showing 1 to 8 of 21354 results</div>
+        <div className="pagination-controls">
+          <button className="page-nav-btn"><ChevronLeft size={16} /> Previous</button>
+          <div className="page-numbers">
+            <button className="page-num-btn active">1</button>
+            <button className="page-num-btn">2</button>
+            <button className="page-num-btn">3</button>
+            <span className="page-dots">...</span>
+            <button className="page-num-btn">2669</button>
+          </div>
+          <button className="page-nav-btn">Next <ChevronRight size={16} /></button>
+        </div>
       </div>
     </div>
-
-    <div className="table-container">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" /></th>
-            <th>Business <BarChart3 size={12} className="sort-icon" /></th>
-            <th>Contact <BarChart3 size={12} className="sort-icon" /></th>
-            <th>Phone <BarChart3 size={12} className="sort-icon" /></th>
-            <th>Postcode <BarChart3 size={12} className="sort-icon" /></th>
-            <th>Status <BarChart3 size={12} className="sort-icon" /></th>
-            <th>BDA</th>
-            <th>BDM</th>
-            <th>Callback <BarChart3 size={12} className="sort-icon" /></th>
-            <th>Provider <BarChart3 size={12} className="sort-icon" /></th>
-          </tr>
-        </thead>
-        <tbody>
-          <TableRow business="Berkeley Heath Auto Centre" contact="Paul" phone="01453 511533" postcode="GL13 9ET" bda="Oleksiy Radchenko" bdm="James King" callback="18/05/26" provider="—" />
-          <TableRow business="Martin Richings Motor Repairs" contact="Martin" phone="01454 311663" postcode="BS37 6AA" bda="Oleksiy Radchenko" bdm="James King" callback="18/05/26" provider="WorldPay" />
-          <TableRow business="Motortech" contact="Steve" phone="—" postcode="GL7 1YG" bda="Oleksiy Radchenko" bdm="James King" callback="12/05/26" provider="—" />
-          <TableRow business="Circuit Motors Ltd" contact="—" phone="01249 782596" postcode="SN14 7HB" bda="Oleksiy Radchenko" bdm="James King" callback="27/05/26" provider="iZettle" />
-          <TableRow business="Purley Road Garage" contact="—" phone="01285 652365" postcode="GL7 1ER" bda="Oleksiy Radchenko" bdm="James King" callback="12/05/26" provider="—" />
-          <TableRow business="OPD Auto Services Ltd" contact="—" phone="01452 771009" postcode="GL6 7AS" bda="Oleksiy Radchenko" bdm="James King" callback="28/05/26" provider="WorldPay" />
-          <TableRow business="Holbrook Garage" contact="Fam" phone="01452 770272" postcode="GL6 7BX" bda="Oleksiy Radchenko" bdm="James King" callback="11/11/26" provider="HandyPay" />
-          <TableRow business="Gloucester Centre for MG's" contact="—" phone="01453 825164" postcode="GL10 2LA" bda="Oleksiy Radchenko" bdm="James King" callback="19/05/26" provider="—" />
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
+  );
+};
 
 const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, provider }) => (
   <tr>
