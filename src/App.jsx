@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, LayoutDashboard, Target, Building2, UserCircle, 
   Calendar, ChevronRight, LogOut, Bell, User,
@@ -13,13 +13,10 @@ function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Toggle Dark Mode
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+  const [darkMode, setDarkMode] = useState(false);
 
   return (
-    <div className={`app-container ${isDarkMode ? 'dark-theme' : ''}`}>
+    <div className={`app-container ${darkMode ? 'dark-theme' : ''}`}>
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -128,8 +125,8 @@ function App() {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="nav-action-btn"><Bell size={18} /></button>
-            <button className="nav-action-btn" onClick={toggleDarkMode}>
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            <button className="nav-action-btn" onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
         </header>
@@ -167,7 +164,7 @@ const DashboardView = () => (
     <section className="pipeline-section">
       <div className="pipeline-top">
         <div className="pipeline-title">Pipeline</div>
-        <div className="pipeline-meta"><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
+        <div className="pipeline-subtitle-meta"><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
       </div>
       <div className="pipeline-stepper">
         <PipelineStep num="21269" label="New" />
@@ -183,7 +180,7 @@ const DashboardView = () => (
 
     <div className="dashboard-bottom-grid">
       <div className="bottom-card">
-        <div className="card-header-flex">
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div className="card-title">Recent Opportunities</div>
           <div className="card-link">View All</div>
         </div>
@@ -199,7 +196,7 @@ const DashboardView = () => (
       <div className="bottom-card">
         <div className="card-header">
           <div className="card-title">Recent Activity</div>
-          <Activity size={16} className="header-icon" />
+          <Activity size={16} className="activity-header-icon" />
         </div>
         <div className="activity-list">
           <ActivityItem user="Oleksiy Radchenko" text="owner not in, callbacks cheduled" time="May 11, 8:36 PM" />
@@ -219,12 +216,12 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
 
   return (
     <div className="page-content">
-      <header className="page-header flex-between">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Opportunities</h1>
           <p>Manage your payment opportunities pipeline</p>
         </div>
-        <div className="header-actions">
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
           <button className="btn-primary" onClick={onAdd}><Plus size={16} /> Add Opportunity</button>
         </div>
@@ -232,7 +229,7 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} />
+          <Search size={16} color="#94a3b8" />
           <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
         </div>
         
@@ -274,7 +271,7 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
           )}
         </div>
 
-        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
+        <button className="btn-secondary btn-items">My Items</button>
         <div className="view-toggle">
           <button className="view-btn"><Grid size={16} /></button>
           <button className="view-btn active"><List size={16} /></button>
@@ -334,7 +331,7 @@ const AccountsView = ({ onImport }) => {
 
   return (
     <div className="page-content">
-      <header className="page-header flex-between">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Accounts</h1>
           <p>0 transacting, 2 approved, 0 delivered, 0 non-transacting</p>
@@ -344,7 +341,7 @@ const AccountsView = ({ onImport }) => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} />
+          <Search size={16} color="#94a3b8" />
           <input type="text" placeholder="Search accounts..." />
         </div>
 
@@ -376,7 +373,7 @@ const AccountsView = ({ onImport }) => {
           )}
         </div>
 
-        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
+        <button className="btn-secondary btn-items">My Items</button>
         <div className="view-toggle">
           <button className="view-btn"><Grid size={16} /></button>
           <button className="view-btn active"><List size={16} /></button>
@@ -418,7 +415,7 @@ const ContactView = () => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} />
+          <Search size={16} color="#94a3b8" />
           <input type="text" placeholder="Search contacts..." />
         </div>
 
@@ -455,14 +452,14 @@ const CalendarView = () => {
     <div className="page-content">
       {/* Alert Banner */}
       <div className="calendar-alert-banner">
-        <Bell size={18} />
+        <Bell size={18} className="alert-icon" />
         <div className="alert-content">
           <div className="alert-title">You have 1 callback today</div>
           <div className="alert-item"><Phone size={14} /> 7a Coffee Shop</div>
         </div>
       </div>
 
-      <header className="page-header flex-between">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Calendar</h1>
           <p>Manage scheduled appointments and callbacks</p>
@@ -490,12 +487,12 @@ const CalendarView = () => {
 const UsersView = ({ onImport }) => {
   return (
     <div className="page-content">
-      <header className="page-header flex-between">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Users</h1>
           <p>Manage your team members and their roles</p>
         </div>
-        <div className="header-actions">
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
           <button className="btn-primary"><Plus size={16} /> Add User</button>
         </div>
@@ -503,7 +500,7 @@ const UsersView = ({ onImport }) => {
 
       <div className="filters-bar">
         <div className="filter-search">
-          <Search size={16} />
+          <Search size={16} color="#94a3b8" />
           <input type="text" placeholder="Search users..." />
         </div>
         <div className="dropdown-container">
@@ -538,8 +535,8 @@ const UserCard = ({ initials, name, handle, email, phone, role }) => (
       <div className="user-card-name">{name}</div>
       <div className="user-card-handle">{handle}</div>
       <div className="user-card-contact">
-        <div className="contact-item"><Mail size={14} /> {email}</div>
-        {phone && <div className="contact-item"><Phone size={14} /> {phone}</div>}
+        <div className="contact-item"><Mail size={14} className="contact-icon" /> {email}</div>
+        {phone && <div className="contact-item"><Phone size={14} className="contact-icon" /> {phone}</div>}
       </div>
     </div>
     <div className="user-card-footer">
@@ -605,7 +602,7 @@ const CalendarDayView = () => (
         <div className="event-accent"></div>
         <div className="event-info">
           <div className="event-header">
-            <Phone size={18} color="#10b981" />
+            <Phone size={18} className="event-type-icon" />
             <span className="event-title">7a Coffee Shop</span>
             <span className="status-badge approved" style={{ background: '#dcfce7', color: '#059669' }}>Callback</span>
             <span className="new-badge">new</span>
@@ -625,7 +622,7 @@ const CalendarListView = () => (
   <div className="calendar-list-workspace">
     <div className="filters-bar">
       <div className="filter-search">
-        <Search size={16} />
+        <Search size={16} color="#94a3b8" />
         <input type="text" placeholder="Search entries..." />
       </div>
       <div className="dropdown-container">
@@ -678,7 +675,7 @@ const ContactCard = ({ initial, name, business, phone, type }) => (
     <div className="contact-main">
       <div className="contact-name">{name || business}</div>
       <div className="contact-business">
-        <Building size={14} className="icon-subtle" />
+        <Building size={14} className="contact-business-icon" />
         <span>{business}</span>
       </div>
     </div>
@@ -818,7 +815,7 @@ const ImportLeadsModal = ({ onClose }) => (
         </div>
         <div className="template-box">
           <div className="template-info">
-            <FileText size={20} className="icon-subtle" />
+            <FileText size={20} color="#64748b" />
             <div>
               <h4>CSV Template</h4>
               <p>Download our template to ensure correct mapping.</p>
@@ -894,7 +891,7 @@ const ActivityItem = ({ user, text, time }) => (
   <div className="activity-item">
     <div className="activity-dot"></div>
     <div className="activity-info">
-      <div className="activity-text"><span className="user-name-bold">{user}</span>: {text}</div>
+      <div className="activity-text"><span style={{ fontWeight: 800 }}>{user}</span>: {text}</div>
       <div className="activity-time">{time}</div>
     </div>
   </div>
