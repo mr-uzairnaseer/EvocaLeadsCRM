@@ -9,7 +9,7 @@ import {
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Opportunities');
+  const [activeTab, setActiveTab] = useState('Accounts');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -40,9 +40,13 @@ function App() {
               <span>Opportunities</span>
               {activeTab === 'Opportunities' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
-            <div className="nav-item">
+            <div 
+              className={`nav-item ${activeTab === 'Accounts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('Accounts')}
+            >
               <div className="nav-item-icon"><Building2 size={18} /></div>
               <span>Accounts</span>
+              {activeTab === 'Accounts' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
             <div className="nav-item">
               <div className="nav-item-icon"><UserCircle size={18} /></div>
@@ -111,11 +115,9 @@ function App() {
           </div>
         </header>
 
-        {activeTab === 'Dashboard' ? (
-          <DashboardView />
-        ) : (
-          <OpportunitiesView onAdd={() => setShowAddModal(true)} onImport={() => setShowImportModal(true)} />
-        )}
+        {activeTab === 'Dashboard' && <DashboardView />}
+        {activeTab === 'Opportunities' && <OpportunitiesView onAdd={() => setShowAddModal(true)} onImport={() => setShowImportModal(true)} />}
+        {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
       </main>
 
       {/* Modals */}
@@ -212,7 +214,6 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
           <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
         </div>
         
-        {/* Status Dropdown */}
         <div className="dropdown-container">
           <button className="filter-dropdown" onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
             <Filter size={16} />
@@ -231,7 +232,6 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
           )}
         </div>
 
-        {/* User Dropdown */}
         <div className="dropdown-container">
           <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
             <UserCircle size={16} />
@@ -305,6 +305,98 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
     </div>
   );
 };
+
+const AccountsView = ({ onImport }) => {
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [activeTab, setActiveTab] = useState('All');
+
+  return (
+    <div className="page-content">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>Accounts</h1>
+          <p>0 transacting, 2 approved, 0 delivered, 0 non-transacting</p>
+        </div>
+        <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
+      </header>
+
+      <div className="filters-bar">
+        <div className="filter-search">
+          <Search size={16} color="#94a3b8" />
+          <input type="text" placeholder="Search accounts..." />
+        </div>
+
+        <div className="tab-toggle">
+          {['All', 'Approved', 'Delivered', 'Transacting', 'Non-Trans.'].map(tab => (
+            <button 
+              key={tab} 
+              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        
+        <div className="dropdown-container">
+          <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
+            <Filter size={16} />
+            <span>All Users</span>
+            <ChevronDown size={14} />
+          </button>
+          {showUserDropdown && (
+            <div className="custom-dropdown">
+              <div className="dropdown-item active"><Check size={16} /> All Users</div>
+              <div className="dropdown-item">Vandan Popat</div>
+              <div className="dropdown-item">Oleksiy Radchenko</div>
+              <div className="dropdown-item">Janey Chudasama</div>
+            </div>
+          )}
+        </div>
+
+        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
+        <div className="view-toggle">
+          <button className="view-btn"><Grid size={16} /></button>
+          <button className="view-btn active"><List size={16} /></button>
+        </div>
+      </div>
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Contact</th>
+              <th>Phone</th>
+              <th>Postcode</th>
+              <th>Status</th>
+              <th>Volume</th>
+              <th>MID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <AccountRow business="Frankham Motor Services" contact="Drena" phone="1249890809" postcode="SN15 4NX" status="Approved" volume="20000" mid="123456" />
+            <AccountRow business="Ian Paull Car Repairs" contact="Mo / Matt / Ian" phone="01326 341123" postcode="—" status="Approved" volume="—" mid="—" />
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const AccountRow = ({ business, contact, phone, postcode, status, volume, mid }) => (
+  <tr>
+    <td className="business-cell">{business}</td>
+    <td className="contact-cell">{contact}</td>
+    <td className="phone-cell">
+      {phone} <Copy size={12} className="copy-icon" />
+    </td>
+    <td>{postcode}</td>
+    <td><span className="status-badge approved">{status}</span></td>
+    <td>{volume}</td>
+    <td>{mid}</td>
+  </tr>
+);
 
 const AddOpportunityModal = ({ onClose }) => (
   <div className="modal-overlay">
