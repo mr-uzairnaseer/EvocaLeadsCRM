@@ -54,6 +54,7 @@ function App() {
   const [resetTargetUser, setResetTargetUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
+  const [accountsViewMode, setAccountsViewMode] = useState('list');
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -208,7 +209,13 @@ function App() {
             setViewMode={setOpportunitiesViewMode}
           />
         )}
-        {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
+        {activeTab === 'Accounts' && (
+          <AccountsView 
+            onImport={() => setShowImportModal(true)} 
+            viewMode={accountsViewMode}
+            setViewMode={setAccountsViewMode}
+          />
+        )}
         {activeTab === 'Contact' && <ContactView />}
         {activeTab === 'Calendar' && <CalendarView />}
         {activeTab === 'Users' && (
@@ -495,9 +502,14 @@ const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode }) => {
   );
 };
 
-const AccountsView = ({ onImport }) => {
+const AccountsView = ({ onImport, viewMode, setViewMode }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
+
+  const accounts = [
+    { id: 1, business: 'Frankham Motor Services', contact: 'Drena', phone: '1249890809', postcode: 'SN15 4NX', status: 'Approved', volume: '20000', mid: '123456' },
+    { id: 2, business: 'Ian Paull Car Repairs', contact: 'Mo / Matt / Ian', phone: '01326 341123', postcode: '—', status: 'Approved', volume: '—', mid: '—' },
+  ];
 
   return (
     <div className="page-content">
@@ -527,48 +539,96 @@ const AccountsView = ({ onImport }) => {
           ))}
         </div>
         
-        <div className="dropdown-container">
-          <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
-            <Filter size={16} />
-            <span>All Users</span>
-            <ChevronDown size={14} />
-          </button>
-          {showUserDropdown && (
-            <div className="custom-dropdown">
-              <div className="dropdown-item active"><Check size={16} /> All Users</div>
-              <div className="dropdown-item">Vandan Popat</div>
-              <div className="dropdown-item">Oleksiy Radchenko</div>
-              <div className="dropdown-item">Janey Chudasama</div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className="dropdown-container">
+            <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
+              <Filter size={16} />
+              <span>All Users</span>
+              <ChevronDown size={14} />
+            </button>
+            {showUserDropdown && (
+              <div className="custom-dropdown">
+                <div className="dropdown-item active"><Check size={16} /> All Users</div>
+                <div className="dropdown-item">Vandan Popat</div>
+                <div className="dropdown-item">Oleksiy Radchenko</div>
+                <div className="dropdown-item">Janey Chudasama</div>
+              </div>
+            )}
+          </div>
+
+          <button className="btn-secondary" style={{ padding: '0 1rem', height: '38px' }}>My Items</button>
+          <div className="view-toggle">
+            <button className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><Grid size={16} /></button>
+            <button className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><List size={16} /></button>
+          </div>
+        </div>
+      </div>
+
+      {viewMode === 'list' ? (
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Contact</th>
+                <th>Phone</th>
+                <th>Postcode</th>
+                <th>Status</th>
+                <th>Volume</th>
+                <th>MID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map(acc => (
+                <AccountRow 
+                  key={acc.id}
+                  business={acc.business} 
+                  contact={acc.contact} 
+                  phone={acc.phone} 
+                  postcode={acc.postcode} 
+                  status={acc.status} 
+                  volume={acc.volume} 
+                  mid={acc.mid} 
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="accounts-grid-container">
+          {accounts.map(acc => (
+            <div key={acc.id} className="account-grid-card">
+              <div className="account-grid-header">
+                <div className="account-card-main">
+                  <h3 className="account-card-title">{acc.business}</h3>
+                  <div className="account-card-contact">{acc.contact}</div>
+                </div>
+                <span className={`status-badge ${acc.status.toLowerCase()}`}>{acc.status}</span>
+              </div>
+              <div className="account-card-body">
+                <div className="account-info-row">
+                  <Phone size={14} className="grid-icon" />
+                  <span>{acc.phone}</span>
+                </div>
+                <div className="account-info-row">
+                  <Building size={14} className="grid-icon" />
+                  <span>{acc.postcode}</span>
+                </div>
+                <div className="account-stats-box">
+                  <div className="account-stat-item">
+                    <span className="account-stat-label">Volume</span>
+                    <span className="account-stat-value">{acc.volume}</span>
+                  </div>
+                  <div className="account-stat-item">
+                    <span className="account-stat-label">MID</span>
+                    <span className="account-stat-value">{acc.mid}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-
-        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
-        <div className="view-toggle">
-          <button className="view-btn"><Grid size={16} /></button>
-          <button className="view-btn active"><List size={16} /></button>
-        </div>
-      </div>
-
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Business</th>
-              <th>Contact</th>
-              <th>Phone</th>
-              <th>Postcode</th>
-              <th>Status</th>
-              <th>Volume</th>
-              <th>MID</th>
-            </tr>
-          </thead>
-          <tbody>
-            <AccountRow business="Frankham Motor Services" contact="Drena" phone="1249890809" postcode="SN15 4NX" status="Approved" volume="20000" mid="123456" />
-            <AccountRow business="Ian Paull Car Repairs" contact="Mo / Matt / Ian" phone="01326 341123" postcode="—" status="Approved" volume="—" mid="—" />
-          </tbody>
-        </table>
-      </div>
+      )}
     </div>
   );
 };
