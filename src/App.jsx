@@ -13,11 +13,12 @@ function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${!sidebarOpen ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${!sidebarOpen ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <div className="brand-box">Evoca</div>
         </div>
@@ -116,7 +117,12 @@ function App() {
       {/* Main Wrapper */}
       <main className="main-wrapper">
         <header className="top-nav">
-          <button className="sidebar-toggle-btn"><PanelLeft size={18} /></button>
+          <button 
+            className="sidebar-toggle-btn" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <PanelLeft size={18} />
+          </button>
           <div className="search-bar">
             <Search size={16} color="#9ca3af" />
             <input type="text" placeholder="Search everything..." />
