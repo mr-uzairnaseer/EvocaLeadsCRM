@@ -10,7 +10,7 @@ import {
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Users');
+  const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -177,16 +177,16 @@ const DashboardView = () => (
 
     <div className="dashboard-bottom-grid">
       <div className="bottom-card">
-        <div className="card-header">
-          <div className="card-title">Recent Opportunities</div>
-          <div className="card-link">View All</div>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Recent Opportunities</div>
+          <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>View All</div>
         </div>
-        <div className="opportunity-list">
+        <div className="opportunity-list-clean">
           <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" />
           <OpportunityItem name="Martin Richings Motor Repairs" contact="Martin" />
           <OpportunityItem name="Motortech" contact="Steve" />
-          <OpportunityItem name="Circuit Motors Ltd" contact="Circuit" />
-          <OpportunityItem name="Purley Road Garage" contact="Purley" />
+          <OpportunityItem name="Circuit Motors Ltd" contact="" />
+          <OpportunityItem name="Purley Road Garage" contact="" />
         </div>
       </div>
 
@@ -875,12 +875,12 @@ const PipelineStep = ({ num, label }) => (
 );
 
 const OpportunityItem = ({ name, contact }) => (
-  <div className="opportunity-item">
-    <div>
-      <div className="opp-name">{name}</div>
-      <div className="opp-contact">{contact}</div>
+  <div className="opportunity-item-clean">
+    <div className="opp-info">
+      <div className="opp-business-name">{name}</div>
+      <div className="opp-contact-name">{contact}</div>
     </div>
-    <div className="new-badge">new</div>
+    <div className="new-badge-filled">new</div>
   </div>
 );
 

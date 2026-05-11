@@ -538,6 +538,17 @@
 .user-action-btn:hover { color: #1e293b; }
 .user-action-btn.delete:hover { color: #ef4444; }
 
+/* Dashboard Clean Layout */
+.opportunity-list-clean { display: flex; flex-direction: column; gap: 1.25rem; }
+.opportunity-item-clean { display: flex; justify-content: space-between; align-items: center; }
+.opp-business-name { font-size: 0.9375rem; font-weight: 700; color: #111827; margin-bottom: 2px; }
+.opp-contact-name { font-size: 0.8125rem; color: #6b7280; font-weight: 500; }
+
+.new-badge-filled {
+  background: #2563eb; color: white; padding: 4px 14px; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+}
+
 /* Modals */
 .modal-overlay {
   position: fixed;
@@ -693,8 +704,6 @@
 
 .dashboard-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 .bottom-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
-.opportunity-item { display: flex; justify-content: space-between; align-items: center; padding: 0.875rem 0.75rem; margin: 0 -0.75rem; border-radius: 8px; border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: pointer; }
-.opportunity-item:hover { background: #f8fafc; }
 .activity-list { display: flex; flex-direction: column; gap: 1.25rem; position: relative; padding-left: 4px; }
 .activity-list::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 1px; background: #e5e7eb; }
 .activity-item { display: flex; gap: 16px; position: relative; z-index: 1; }
