@@ -98,9 +98,14 @@ function App() {
             </div>
           </div>
 
-          <button className="theme-toggle-btn">
-            <Moon size={18} />
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button className="nav-action-btn">
+              <Bell size={18} />
+            </button>
+            <button className="nav-action-btn">
+              <Moon size={18} />
+            </button>
+          </div>
         </header>
 
         <div className="page-content">
