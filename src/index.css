@@ -544,33 +544,104 @@
 .app-status { background: #2563eb; color: white; padding: 4px 12px; border-radius: 6px; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; }
 
 /* Users Workspace */
-.users-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.5rem; }
+.users-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  gap: 1.25rem; 
+  margin-top: 1.5rem; 
+}
 
 .user-card { 
-  background: var(--card-bg); /* Depth Foundation */
-  border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; 
-  display: flex; flex-direction: column; transition: all 0.2s; 
+  background: #ffffff; 
+  border: 1px solid #e5e7eb; 
+  border-radius: 12px; 
+  padding: 1.25rem; 
+  display: flex; 
+  flex-direction: column; 
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
-.user-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); background: #f1f5f9; }
 
-.user-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
-.user-card-avatar { width: 48px; height: 48px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748b; font-size: 1rem; border: 1px solid #e2e8f0; }
+.user-card:hover { 
+  border-color: #2563eb; 
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+  transform: translateY(-2px);
+}
 
-.role-badge { padding: 4px 12px; border-radius: 6px; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; }
+.user-card-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 1rem; 
+}
+
+.user-card-avatar { 
+  width: 40px; 
+  height: 40px; 
+  background: #f3f4f6; 
+  border-radius: 10px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: 800; 
+  color: #1f2937; 
+  font-size: 0.875rem; 
+  border: 1px solid #e5e7eb; 
+}
+
+.role-badge { 
+  padding: 4px 8px; 
+  border-radius: 6px; 
+  font-size: 0.625rem; 
+  font-weight: 800; 
+  text-transform: uppercase; 
+  letter-spacing: 0.025em;
+}
+
 .role-badge.admin { background: #2563eb; color: white; }
-.role-badge.bdm { background: white; color: #64748b; border: 1px solid #e2e8f0; }
+.role-badge.bdm { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
 .user-card-body { flex: 1; }
-.user-card-name { font-size: 1.0625rem; font-weight: 800; color: #1e293b; margin-bottom: 2px; }
-.user-card-handle { font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.75rem; }
+.user-card-name { font-size: 1rem; font-weight: 700; color: #111827; margin-bottom: 2px; }
+.user-card-handle { font-size: 0.8125rem; color: #6b7280; font-weight: 500; margin-bottom: 1rem; }
 
-.user-card-contact { display: flex; flex-direction: column; gap: 4px; }
-.contact-item { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: #64748b; font-weight: 600; word-break: break-all; }
+.user-card-contact { display: flex; flex-direction: column; gap: 6px; }
+.contact-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #4b5563; font-weight: 500; word-break: break-all; }
 
-.user-card-footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; display: flex; gap: 1rem; }
-.user-action-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 4px; transition: all 0.2s; }
-.user-action-btn:hover { color: #1e293b; }
-.user-action-btn.delete:hover { color: #ef4444; }
+.user-card-footer { 
+  margin-top: 1.25rem; 
+  padding-top: 1rem; 
+  border-top: 1px solid #f1f5f9; 
+  display: flex; 
+  justify-content: space-between;
+  gap: 0.5rem; 
+}
+
+.user-action-btn { 
+  background: #f9fafb; 
+  border: 1px solid #e5e7eb; 
+  color: #6b7280; 
+  cursor: pointer; 
+  padding: 6px; 
+  border-radius: 6px;
+  transition: all 0.2s; 
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-action-btn:hover { 
+  background: #f3f4f6;
+  color: #2563eb; 
+  border-color: #cbd5e1;
+}
+
+.user-action-btn.delete:hover { 
+  background: #fef2f2;
+  color: #ef4444; 
+  border-color: #fee2e2;
+}
 
 /* Dashboard Clean Layout */
 .opportunity-list-clean { display: flex; flex-direction: column; gap: 1.25rem; }
