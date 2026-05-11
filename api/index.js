@@ -12,6 +12,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Critical Var Check
+app.get('/api/debug', (req, res) => {
+  res.send({
+    hasMongoUri: !!process.env.MONGODB_URI,
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    nodeEnv: process.env.NODE_ENV,
+    msg: "If hasMongoUri is false, you forgot to add it to Vercel Settings!"
+  });
+});
+
+app.get('/api/test-db', async (req, res) => {
+  try {
+    await connectDB();
+    res.send({ status: 'Connected to MongoDB successfully!' });
+  } catch (e) {
+    res.status(500).send({ error: e.message });
+  }
+});
+
 // Auth Middleware
 const auth = async (req, res, next) => {
   try {
