@@ -53,7 +53,7 @@ function App() {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('grid');
+  const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -345,6 +345,7 @@ const DashboardView = ({ stats, onNavigate }) => (
           <ActivityItem user="Vandan Popat" text="ring out, no answer" time="May 11, 8:22 PM" />
         </div>
       </div>
+    </div>
   </div>
 );
 
