@@ -89,7 +89,11 @@
 }
 
 .nav-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); }
-.nav-item:hover:not(.active) { background: #f3f4f6; }
+
+.nav-item:hover:not(.active) { 
+  background: var(--sidebar-active-bg); 
+  color: var(--sidebar-active-text); 
+}
 
 /* Team List */
 .team-subtitle {
