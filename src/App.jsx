@@ -16,7 +16,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState('');
-  const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
   
   // Lead States
   const [showModal, setShowModal] = useState(false);
@@ -145,7 +145,6 @@ function App() {
           <button type="submit" disabled={loginLoading} className="primary-btn" style={{ width: '100%', justifyContent: 'center' }}>
             {loginLoading ? 'Authenticating...' : 'Sign In'}
           </button>
-          <div className="login-footer">admin@leadscrm.com / admin_password_123</div>
         </form>
       </div>
     );
