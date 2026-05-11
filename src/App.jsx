@@ -11,8 +11,7 @@ function App() {
       {/* Sidebar - 100% Match with Screenshot */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="brand-logo">Z</div>
-          <span className="brand-name">Zen Hub</span>
+          <div className="brand-box">Evoca</div>
         </div>
 
         <div className="nav-section-label">Navigation</div>

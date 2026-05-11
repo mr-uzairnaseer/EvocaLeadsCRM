@@ -4,7 +4,7 @@
   --sidebar-active-bg: #e5e7eb;
   --sidebar-active-text: #111827;
   --border: #e5e7eb;
-  --accent: #2563eb;
+  --accent: #000000;
   --online: #10b981;
 }
 
@@ -17,13 +17,13 @@
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #9ca3af;
+  background: #d1d5db;
   border-radius: 10px;
 }
 
@@ -33,61 +33,52 @@
   overflow: hidden;
 }
 
-/* Sidebar Styling */
+/* Sidebar Styling - COMPACT */
 .sidebar {
-  width: 280px;
+  width: 260px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 0.75rem;
+  padding: 1rem 0.5rem;
   overflow-y: auto;
 }
 
 .sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 0.75rem;
-  margin-bottom: 2rem;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.brand-logo {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
+.brand-box {
+  border: 2px solid #000000;
+  padding: 6px 12px;
+  display: inline-block;
   font-weight: 900;
-  font-size: 1.125rem;
-}
-
-.brand-name {
-  font-weight: 700;
   font-size: 1rem;
-  color: #111827;
+  letter-spacing: 2px;
+  color: #000000;
+  text-transform: uppercase;
 }
 
 .nav-section-label {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
-  margin: 1.25rem 0.75rem 0.5rem;
+  color: #9ca3af;
+  margin: 0.75rem 0.75rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0.625rem 0.75rem;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
   color: var(--sidebar-text);
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   transition: all 0.2s;
 }
 
@@ -102,46 +93,45 @@
 }
 
 .nav-item-icon {
-  width: 20px;
+  width: 18px;
   display: flex;
   justify-content: center;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .nav-item-arrow {
   margin-left: auto;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 /* Team Section */
 .team-subtitle {
-  font-size: 0.6875rem;
-  font-weight: 700;
+  font-size: 0.625rem;
+  font-weight: 800;
   color: #9ca3af;
   text-transform: uppercase;
-  margin: 1rem 0.75rem 0.5rem;
-  letter-spacing: 0.025em;
+  margin: 0.5rem 0.75rem 0.25rem;
+  letter-spacing: 0.1em;
 }
 
 .team-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .team-member {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  gap: 8px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
   color: #374151;
   font-weight: 500;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--online);
 }
@@ -150,20 +140,20 @@
 .sidebar-footer {
   margin-top: auto;
   padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 10px;
+  padding: 0.5rem 0.75rem;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
-  background: #e5e7eb;
+  width: 32px;
+  height: 32px;
+  background: #f3f4f6;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -179,12 +169,12 @@
 
 .user-name {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #111827;
 }
 
 .user-email {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: #6b7280;
   white-space: nowrap;
   overflow: hidden;
@@ -194,18 +184,15 @@
 .logout-btn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0.75rem;
+  gap: 10px;
+  padding: 0.5rem 0.75rem;
   color: #6b7280;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s;
 }
 
-.logout-btn:hover {
-  color: #111827;
-}
+.logout-btn:hover { color: #111827; }
 
 /* Main Content Area */
 .main-content {
