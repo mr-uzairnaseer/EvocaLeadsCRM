@@ -46,6 +46,7 @@ function App() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -184,12 +185,13 @@ function App() {
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Contact' && <ContactView />}
         {activeTab === 'Calendar' && <CalendarView />}
-        {activeTab === 'Users' && <UsersView onImport={() => setShowImportModal(true)} />}
+        {activeTab === 'Users' && <UsersView onImport={() => setShowImportModal(true)} onAdd={() => setShowAddUserModal(true)} />}
       </main>
 
       {/* Modals */}
       {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
       {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} />}
+      {showAddUserModal && <AddUserModal onClose={() => setShowAddUserModal(false)} />}
       
       {/* Search Popup */}
       {showSearchPopup && <SearchPopup onClose={() => setShowSearchPopup(false)} />}
@@ -535,7 +537,7 @@ const CalendarView = () => {
   );
 };
 
-const UsersView = ({ onImport }) => {
+const UsersView = ({ onImport, onAdd }) => {
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -545,7 +547,7 @@ const UsersView = ({ onImport }) => {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
-          <button className="btn-primary"><Plus size={16} /> Add User</button>
+          <button className="btn-primary" onClick={onAdd}><Plus size={16} /> Add User</button>
         </div>
       </header>
 
@@ -916,6 +918,54 @@ const SearchPopup = ({ onClose }) => {
     </div>
   );
 };
+
+const AddUserModal = ({ onClose }) => (
+  <div className="modal-overlay">
+    <div className="modal-card" style={{ maxWidth: '500px' }}>
+      <div className="modal-header">
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Add Team Member</h2>
+        <button className="modal-close" onClick={onClose}><X size={18} /></button>
+      </div>
+      <div className="modal-body">
+        <div className="form-grid">
+          <div className="form-field">
+            <label>Full Name *</label>
+            <input type="text" placeholder="e.g. John Doe" />
+          </div>
+          <div className="form-field">
+            <label>Username *</label>
+            <input type="text" defaultValue="mr.umairnaseer@gmail.com" />
+          </div>
+          <div className="form-field">
+            <label>Password *</label>
+            <input type="password" defaultValue=".........." />
+          </div>
+          <div className="form-field">
+            <label>Role *</label>
+            <select className="form-select">
+              <option>BDA</option>
+              <option>ADMIN</option>
+              <option>BDM</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Email</label>
+            <input type="email" />
+          </div>
+          <div className="form-field">
+            <label>Phone</label>
+            <input type="text" />
+          </div>
+        </div>
+      </div>
+      <div className="modal-footer" style={{ borderTop: 'none', padding: '0 1.5rem 1.5rem' }}>
+        <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '44px' }} onClick={onClose}>
+          Create User
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 const ImportLeadsModal = ({ onClose }) => (
   <div className="modal-overlay">
