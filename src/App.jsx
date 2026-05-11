@@ -223,6 +223,10 @@ function App() {
             onImport={() => setShowImportModal(true)} 
             viewMode={opportunitiesViewMode}
             setViewMode={setOpportunitiesViewMode}
+            onLeadClick={(lead) => {
+              setSelectedLead(lead);
+              setActiveTab('LeadDetails');
+            }}
           />
         )}
         {activeTab === 'Accounts' && (
@@ -372,7 +376,7 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
   </div>
 );
 
-const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode }) => {
+const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode, onLeadClick }) => {
   const opportunities = [
     { id: 1, business: 'Berkeley Heath Auto Centre', name: 'Paul', postcode: 'GL13 9ET', phone: '01453 511533', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
     { id: 2, business: 'Martin Richings Motor Repairs', name: 'Martin', postcode: 'BS37 6AA', phone: '01454 311663', provider: 'WorldPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
@@ -450,6 +454,16 @@ const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode }) => {
                   bdm={opp.bdm} 
                   callback={opp.callback} 
                   provider={opp.provider || '—'} 
+                  onClick={() => onLeadClick({ 
+                    name: opp.business, 
+                    contact: opp.name, 
+                    status: "New", 
+                    phone: opp.phone, 
+                    email: `${opp.name.toLowerCase().replace(' ', '.')}@${opp.business.toLowerCase().replace(/[^a-z]/g, '')}.co.uk`, 
+                    address: opp.postcode || "N/A", 
+                    bda: opp.bda, 
+                    bdm: opp.bdm 
+                  })}
                 />
               ))}
             </tbody>
@@ -458,7 +472,21 @@ const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode }) => {
       ) : (
         <div className="opportunities-grid-container">
           {opportunities.map(opp => (
-            <div key={opp.id} className="opportunity-grid-card">
+            <div 
+              key={opp.id} 
+              className="opportunity-grid-card" 
+              onClick={() => onLeadClick({ 
+                name: opp.business, 
+                contact: opp.name, 
+                status: "New", 
+                phone: opp.phone, 
+                email: `${opp.name.toLowerCase().replace(' ', '.')}@${opp.business.toLowerCase().replace(/[^a-z]/g, '')}.co.uk`, 
+                address: opp.postcode || "N/A", 
+                bda: opp.bda, 
+                bdm: opp.bdm 
+              })}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="grid-card-header">
                 <div className="grid-card-main">
                   <h3 className="grid-card-title">{opp.business}</h3>
@@ -1267,8 +1295,8 @@ const ImportLeadsModal = ({ onClose }) => (
   </div>
 );
 
-const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, provider }) => (
-  <tr>
+const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, provider, onClick }) => (
+  <tr onClick={onClick} style={{ cursor: 'pointer' }}>
     <td><input type="checkbox" /></td>
     <td className="business-cell">{business}</td>
     <td className="contact-cell">{contact}</td>
