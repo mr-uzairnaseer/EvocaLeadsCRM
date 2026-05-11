@@ -189,7 +189,12 @@ function App() {
               <Bell size={18} />
               <div className="notification-dot"></div>
             </button>
-            {showNotifications && <NotificationsPopup onClose={() => setShowNotifications(false)} />}
+            {showNotifications && (
+              <NotificationsPopup 
+                onClose={() => setShowNotifications(false)} 
+                onNavigate={() => setActiveTab('Notifications')}
+              />
+            )}
           </div>
         </header>
 
@@ -217,6 +222,7 @@ function App() {
             }}
           />
         )}
+        {activeTab === 'Notifications' && <NotificationsView />}
       </main>
 
       {/* Modals */}
@@ -1146,7 +1152,7 @@ const ActivityItem = ({ user, text, time }) => (
   </div>
 );
 
-const NotificationsPopup = ({ onClose }) => {
+const NotificationsPopup = ({ onClose, onNavigate }) => {
   const notifications = [
     { id: 1, user: 'Oleksiy Radchenko', text: 'owner not in, callbacks scheduled', time: '12 mins ago', unread: true },
     { id: 2, user: 'System', text: 'New lead created: Berkeley Heath Auto Centre', time: '45 mins ago', unread: true },
@@ -1177,8 +1183,58 @@ const NotificationsPopup = ({ onClose }) => {
           </div>
         ))}
       </div>
-      <div className="notifications-footer" onClick={onClose}>
+      <div className="notifications-footer" onClick={() => {
+        onNavigate();
+        onClose();
+      }}>
         View all notifications
+      </div>
+    </div>
+  );
+};
+
+const NotificationsView = () => {
+  const notifications = [
+    { id: 1, user: 'Oleksiy Radchenko', text: 'owner not in, callbacks scheduled', time: 'May 11, 8:36 PM', unread: true, type: 'Callback' },
+    { id: 2, user: 'System', text: 'New lead created: Berkeley Heath Auto Centre', time: 'May 11, 8:36 PM', unread: true, type: 'Lead' },
+    { id: 3, user: 'Oleksiy Radchenko', text: 'call back arranged', time: 'May 11, 8:24 PM', unread: false, type: 'Update' },
+    { id: 4, user: 'System', text: 'New lead created: Martin Richings Motor Repairs', time: 'May 11, 8:23 PM', unread: false, type: 'Lead' },
+    { id: 5, user: 'Vandan Popat', text: 'ring out, no answer', time: 'May 11, 8:22 PM', unread: false, type: 'Update' },
+    { id: 6, user: 'James King', text: 'Meeting scheduled with Frankham Motor Services', time: 'May 11, 4:15 PM', unread: false, type: 'Meeting' },
+    { id: 7, user: 'System', text: 'Monthly stats report generated', time: 'May 11, 10:00 AM', unread: false, type: 'Report' },
+  ];
+
+  return (
+    <div className="page-content">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1>Notifications</h1>
+          <p>Stay updated with the latest CRM activity</p>
+        </div>
+        <button className="btn-secondary">Mark all as read</button>
+      </header>
+
+      <div className="notifications-page-list">
+        {notifications.map(n => (
+          <div key={n.id} className={`notification-page-item ${n.unread ? 'unread' : ''}`}>
+            <div className="notif-left">
+              <div className="notif-avatar-large">
+                {n.user === 'System' ? <Activity size={20} /> : n.user[0]}
+              </div>
+              <div className="notif-info">
+                <div className="notif-header">
+                  <span className="notif-user">{n.user}</span>
+                  <span className="notif-type-tag">{n.type}</span>
+                </div>
+                <div className="notif-text">{n.text}</div>
+                <div className="notif-time">{n.time}</div>
+              </div>
+            </div>
+            <div className="notif-actions">
+              <button className="btn-icon-only"><MoreHorizontal size={18} /></button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

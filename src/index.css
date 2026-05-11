@@ -722,6 +722,60 @@
   background: #ef4444; border-radius: 50%; border: 2px solid white;
 }
 
+/* Notifications Page */
+.notifications-page-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1000px;
+  margin-top: 1.5rem;
+}
+
+.notification-page-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.notification-page-item:hover {
+  border-color: #2563eb;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  transform: translateX(4px);
+}
+
+.notification-page-item.unread {
+  border-left: 4px solid #2563eb;
+  background: #f0f9ff;
+}
+
+.notif-left { display: flex; gap: 1.25rem; align-items: center; }
+
+.notif-avatar-large {
+  width: 48px; height: 48px; border-radius: 12px; background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.125rem; font-weight: 800; color: #64748b;
+}
+
+.notification-page-item.unread .notif-avatar-large { background: #dbeafe; color: #2563eb; }
+
+.notif-info { display: flex; flex-direction: column; gap: 4px; }
+
+.notif-header { display: flex; align-items: center; gap: 12px; }
+.notif-user { font-size: 1rem; font-weight: 700; color: #1e293b; }
+.notif-type-tag { font-size: 0.625rem; font-weight: 800; text-transform: uppercase; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; border: 1px solid #e2e8f0; }
+
+.notif-text { font-size: 0.9375rem; color: #475569; font-weight: 500; }
+.notif-time { font-size: 0.8125rem; color: #94a3b8; font-weight: 500; }
+
+.btn-icon-only { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s; }
+.btn-icon-only:hover { background: #f1f5f9; color: #1e293b; }
+
 /* Dashboard Clean Layout */
 .opportunity-list-clean { display: flex; flex-direction: column; gap: 1.25rem; }
 .opportunity-item-clean { display: flex; justify-content: space-between; align-items: center; }
