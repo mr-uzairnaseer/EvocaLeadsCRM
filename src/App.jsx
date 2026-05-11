@@ -4,12 +4,14 @@ import {
   Calendar, ChevronRight, LogOut, Bell, User,
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
-  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft
+  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, Download
 } from 'lucide-react';
 import './index.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('Opportunities');
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   return (
     <div className="app-container">
@@ -22,18 +24,12 @@ function App() {
         <div className="sidebar-scrollable">
           <div className="nav-section-label">Navigation</div>
           <nav className="nav-menu">
-            <div 
-              className={`nav-item ${activeTab === 'Dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('Dashboard')}
-            >
+            <div className={`nav-item ${activeTab === 'Dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('Dashboard')}>
               <div className="nav-item-icon"><LayoutDashboard size={18} /></div>
               <span>Dashboard</span>
               {activeTab === 'Dashboard' && <ChevronRight size={14} className="nav-item-arrow" />}
             </div>
-            <div 
-              className={`nav-item ${activeTab === 'Opportunities' ? 'active' : ''}`}
-              onClick={() => setActiveTab('Opportunities')}
-            >
+            <div className={`nav-item ${activeTab === 'Opportunities' ? 'active' : ''}`} onClick={() => setActiveTab('Opportunities')}>
               <div className="nav-item-icon"><Target size={18} /></div>
               <span>Opportunities</span>
               {activeTab === 'Opportunities' && <ChevronRight size={14} className="nav-item-arrow" />}
@@ -109,8 +105,12 @@ function App() {
           </div>
         </header>
 
-        {activeTab === 'Dashboard' ? <DashboardView /> : <OpportunitiesView />}
+        {activeTab === 'Dashboard' ? <DashboardView /> : <OpportunitiesView onImport={() => setShowImportModal(true)} onAdd={() => setShowAddModal(true)} />}
       </main>
+
+      {/* Modals */}
+      {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} />}
+      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
     </div>
   );
 }
@@ -179,7 +179,7 @@ const DashboardView = () => (
   </div>
 );
 
-const OpportunitiesView = () => {
+const OpportunitiesView = ({ onImport, onAdd }) => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
@@ -191,8 +191,8 @@ const OpportunitiesView = () => {
           <p>Manage your payment opportunities pipeline</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn-secondary"><Upload size={16} /> Import CSV</button>
-          <button className="btn-primary"><Plus size={16} /> Add Opportunity</button>
+          <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
+          <button className="btn-primary" onClick={onAdd}><Plus size={16} /> Add Opportunity</button>
         </div>
       </header>
 
@@ -202,7 +202,6 @@ const OpportunitiesView = () => {
           <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
         </div>
         
-        {/* Status Dropdown */}
         <div className="dropdown-container">
           <button className="filter-dropdown" onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
             <Filter size={16} />
@@ -221,7 +220,6 @@ const OpportunitiesView = () => {
           )}
         </div>
 
-        {/* User Dropdown */}
         <div className="dropdown-container">
           <button className="filter-dropdown" onClick={() => setShowUserDropdown(!showUserDropdown)}>
             <UserCircle size={16} />
@@ -295,6 +293,88 @@ const OpportunitiesView = () => {
     </div>
   );
 };
+
+const ImportModal = ({ onClose }) => (
+  <div className="modal-overlay">
+    <div className="modal-card small">
+      <div className="modal-header">
+        <h2>Import leads</h2>
+        <button className="close-modal" onClick={onClose}><X size={20} /></button>
+      </div>
+      <div className="modal-body">
+        <button className="btn-secondary" style={{ width: 'fit-content', marginBottom: '1.5rem' }}>
+          <Download size={16} /> Download CSV template
+        </button>
+        <div className="upload-dropzone">
+          <Upload size={32} color="#94a3b8" />
+          <p>Click to select a CSV file</p>
+        </div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn-primary full-width">Upload & Import</button>
+      </div>
+    </div>
+  </div>
+);
+
+const AddOpportunityModal = ({ onClose }) => (
+  <div className="modal-overlay">
+    <div className="modal-card">
+      <div className="modal-header">
+        <h2>Add New Opportunity</h2>
+        <button className="close-modal" onClick={onClose}><X size={20} /></button>
+      </div>
+      <div className="modal-body scrollable">
+        <div className="form-grid">
+          <FormGroup label="Business Name *" placeholder="" />
+          <FormGroup label="Contact Name" placeholder="" />
+          <FormGroup label="Email" placeholder="" />
+          <FormGroup label="Phone" placeholder="" />
+          <FormGroup label="Full Address" placeholder="" full />
+          <FormGroup label="Town / City" placeholder="" />
+          <FormGroup label="Postcode" placeholder="" />
+          <div className="form-group">
+            <label>Business Type</label>
+            <select className="form-input"><option>Select business type</option></select>
+          </div>
+          <FormGroup label="Est. Monthly Volume" placeholder="e.g. $50,000" />
+          <FormGroup label="Current Provider" placeholder="e.g. WorldPay" />
+          <FormGroup label="Rates" placeholder="e.g. 1.5%" />
+          <FormGroup label="Time Left in Contract" placeholder="e.g. 6 months" full />
+        </div>
+        <div className="checkbox-row">
+          <label className="checkbox-group"><input type="checkbox" /> EPOS / Integrated</label>
+          <label className="checkbox-group"><input type="checkbox" /> Email Sent</label>
+        </div>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Assign BDA</label>
+            <select className="form-input"><option>Unassigned</option></select>
+          </div>
+          <div className="form-group">
+            <label>Assign BDM</label>
+            <select className="form-input"><option>Unassigned</option></select>
+          </div>
+          <div className="form-group full">
+            <label>Notes</label>
+            <textarea className="form-input textarea" placeholder=""></textarea>
+          </div>
+        </div>
+      </div>
+      <div className="modal-footer dual">
+        <button className="btn-secondary full-width" onClick={onClose}>Cancel</button>
+        <button className="btn-primary full-width">Create Opportunity</button>
+      </div>
+    </div>
+  </div>
+);
+
+const FormGroup = ({ label, placeholder, full }) => (
+  <div className={`form-group ${full ? 'full' : ''}`}>
+    <label>{label}</label>
+    <input type="text" className="form-input" placeholder={placeholder} />
+  </div>
+);
 
 const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, provider }) => (
   <tr>
