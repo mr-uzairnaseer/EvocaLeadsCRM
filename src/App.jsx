@@ -14,6 +14,21 @@ function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showSearchPopup, setShowSearchPopup] = useState(false);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearchPopup(true);
+      }
+      if (e.key === 'Escape') {
+        setShowSearchPopup(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className={`app-container ${!sidebarOpen ? 'sidebar-collapsed' : ''}`}>
@@ -123,9 +138,9 @@ function App() {
           >
             <PanelLeft size={18} />
           </button>
-          <div className="search-bar">
+          <div className="search-bar-trigger" onClick={() => setShowSearchPopup(true)}>
             <Search size={16} color="#9ca3af" />
-            <input type="text" placeholder="Search everything..." />
+            <span>Search everything...</span>
             <div className="kb-hint">⌘ K</div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -144,6 +159,9 @@ function App() {
       {/* Modals */}
       {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
       {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} />}
+      
+      {/* Search Popup */}
+      {showSearchPopup && <SearchPopup onClose={() => setShowSearchPopup(false)} />}
     </div>
   );
 }
@@ -801,6 +819,42 @@ const AddOpportunityModal = ({ onClose }) => (
     </div>
   </div>
 );
+
+const SearchPopup = ({ onClose }) => {
+  const [query, setQuery] = useState('');
+
+  return (
+    <div className="search-popup-overlay" onClick={onClose}>
+      <div className="search-popup-card" onClick={e => e.stopPropagation()}>
+        <div className="search-popup-header">
+          <Search size={20} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Search opportunities, accounts, users..." 
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button className="search-close-btn" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="search-popup-body">
+          {!query ? (
+            <div className="search-empty-state">
+              <p>Type at least 2 characters to search...</p>
+            </div>
+          ) : (
+            <div className="search-results-placeholder">
+              <p>Searching for "{query}"...</p>
+              <div className="search-hint">No results found for this demo.</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ImportLeadsModal = ({ onClose }) => (
   <div className="modal-overlay">
