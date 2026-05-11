@@ -14,54 +14,56 @@ function App() {
           <div className="brand-box">Evoca</div>
         </div>
 
-        <div className="nav-section-label">Navigation</div>
-        <nav className="nav-menu">
-          <div className="nav-item active">
-            <div className="nav-item-icon"><LayoutDashboard size={20} /></div>
-            <span>Dashboard</span>
-            <ChevronRight size={16} className="nav-item-arrow" />
-          </div>
-          <div className="nav-item">
-            <div className="nav-item-icon"><Target size={20} /></div>
-            <span>Opportunities</span>
-          </div>
-          <div className="nav-item">
-            <div className="nav-item-icon"><Building2 size={20} /></div>
-            <span>Accounts</span>
-          </div>
-          <div className="nav-item">
-            <div className="nav-item-icon"><UserCircle size={20} /></div>
-            <span>Contact</span>
-          </div>
-          <div className="nav-item">
-            <div className="nav-item-icon"><Calendar size={20} /></div>
-            <span>Calendar</span>
-          </div>
-        </nav>
+        <div className="sidebar-scrollable">
+          <div className="nav-section-label">Navigation</div>
+          <nav className="nav-menu">
+            <div className="nav-item active">
+              <div className="nav-item-icon"><LayoutDashboard size={20} /></div>
+              <span>Dashboard</span>
+              <ChevronRight size={16} className="nav-item-arrow" />
+            </div>
+            <div className="nav-item">
+              <div className="nav-item-icon"><Target size={20} /></div>
+              <span>Opportunities</span>
+            </div>
+            <div className="nav-item">
+              <div className="nav-item-icon"><Building2 size={20} /></div>
+              <span>Accounts</span>
+            </div>
+            <div className="nav-item">
+              <div className="nav-item-icon"><UserCircle size={20} /></div>
+              <span>Contact</span>
+            </div>
+            <div className="nav-item">
+              <div className="nav-item-icon"><Calendar size={20} /></div>
+              <span>Calendar</span>
+            </div>
+          </nav>
 
-        <div className="nav-section-label">Admin</div>
-        <nav className="nav-menu">
-          <div className="nav-item">
-            <div className="nav-item-icon"><Users size={20} /></div>
-            <span>Users</span>
+          <div className="nav-section-label">Admin</div>
+          <nav className="nav-menu">
+            <div className="nav-item">
+              <div className="nav-item-icon"><Users size={20} /></div>
+              <span>Users</span>
+            </div>
+          </nav>
+
+          <div className="nav-section-label">Team</div>
+          <div className="team-subtitle">ADMIN</div>
+          <div className="team-list">
+            <TeamMember name="Vandan Popat" />
+            <TeamMember name="Oleksiy Radchenko" />
+            <TeamMember name="Janey Chudasama" />
+            <TeamMember name="James King" />
+            <TeamMember name="Aivi Verousi" />
+            <TeamMember name="Umair" />
+            <TeamMember name="James King" />
           </div>
-        </nav>
 
-        <div className="nav-section-label">Team</div>
-        <div className="team-subtitle">ADMIN</div>
-        <div className="team-list">
-          <TeamMember name="Vandan Popat" />
-          <TeamMember name="Oleksiy Radchenko" />
-          <TeamMember name="Janey Chudasama" />
-          <TeamMember name="James King" />
-          <TeamMember name="Aivi Verousi" />
-          <TeamMember name="Umair" />
-          <TeamMember name="James King" />
-        </div>
-
-        <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>BDM</div>
-        <div className="team-list">
-          <TeamMember name="Aaron wake" />
+          <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>BDM</div>
+          <div className="team-list">
+            <TeamMember name="Aaron wake" />
+          </div>
         </div>
 
         <div className="sidebar-footer">

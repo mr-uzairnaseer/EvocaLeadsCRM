@@ -40,13 +40,20 @@
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 1rem 0.5rem;
-  overflow-y: auto;
+  padding: 1rem 0; /* Vertical padding managed by children */
+  overflow: hidden; /* Header and Footer are fixed */
 }
 
 .sidebar-header {
-  padding: 0.5rem;
+  padding: 0.5rem 1.25rem;
   margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.sidebar-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0.5rem;
 }
 
 .brand-box {
