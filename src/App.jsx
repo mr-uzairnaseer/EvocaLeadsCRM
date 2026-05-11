@@ -4,12 +4,12 @@ import {
   Calendar, ChevronRight, LogOut, Bell, User,
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
-  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText
+  Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download
 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState('Opportunities');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -331,6 +331,38 @@ const AddOpportunityModal = ({ onClose }) => (
             <label>Postcode</label>
             <input type="text" placeholder="e.g. GL1 1AA" />
           </div>
+          <div className="form-field">
+            <label>Status</label>
+            <select className="form-select">
+              <option>New</option>
+              <option>Contacted</option>
+              <option>Qualified</option>
+              <option>Converted</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>BDA Assigned</label>
+            <select className="form-select">
+              <option>Oleksiy Radchenko</option>
+              <option>Vandan Popat</option>
+              <option>Umair</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>BDM Assigned</label>
+            <select className="form-select">
+              <option>James King</option>
+              <option>Aaron wake</option>
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Callback Date</label>
+            <input type="date" />
+          </div>
+          <div className="form-field" style={{ gridColumn: 'span 2' }}>
+            <label>Current Provider</label>
+            <input type="text" placeholder="e.g. WorldPay" />
+          </div>
         </div>
       </div>
       <div className="modal-footer">
@@ -350,15 +382,21 @@ const ImportLeadsModal = ({ onClose }) => (
       </div>
       <div className="modal-body">
         <div className="import-dropzone">
-          <Upload size={32} color="#94a3b8" />
+          <Upload size={32} color="#2563eb" />
           <h3>Click or drag CSV file here</h3>
           <p>Support for .csv, .xls, .xlsx</p>
         </div>
-        <div className="import-hints">
-          <div className="hint-item">
-            <FileText size={16} />
-            <span>Download our CSV template to ensure correct data mapping.</span>
+        <div className="template-box">
+          <div className="template-info">
+            <FileText size={20} color="#64748b" />
+            <div>
+              <h4>CSV Template</h4>
+              <p>Download our template to ensure correct mapping.</p>
+            </div>
           </div>
+          <button className="btn-download">
+            <Download size={16} /> Download
+          </button>
         </div>
       </div>
       <div className="modal-footer">
