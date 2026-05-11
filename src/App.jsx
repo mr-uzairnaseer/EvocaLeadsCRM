@@ -198,7 +198,7 @@ function App() {
           </div>
         </header>
 
-        {activeTab === 'Dashboard' && <DashboardView />}
+        {activeTab === 'Dashboard' && <DashboardView stats={{totalOpportunities: "21354"}} onNavigate={setActiveTab} />}
         {activeTab === 'Opportunities' && <OpportunitiesView onAdd={() => setShowAddModal(true)} onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Contact' && <ContactView />}
@@ -237,7 +237,7 @@ function App() {
   );
 }
 
-const DashboardView = () => (
+const DashboardView = ({ stats, onNavigate }) => (
   <div className="page-content">
     <header className="page-header">
       <h1>Dashboard</h1>
@@ -245,11 +245,51 @@ const DashboardView = () => (
     </header>
 
     <section className="stats-grid">
-      <StatCard label="Opportunities" value="21354" sub="Active in pipeline" icon={<Target size={16} />} />
-      <StatCard label="Appointments" value="87" sub="Total" icon={<Calendar size={16} />} />
-      <StatCard label="Sold" value="2" sub="Total accounts" icon={<TrendingUp size={16} />} />
-      <StatCard label="Conversion" value="0%" sub="Opp to account" icon={<BarChart3 size={16} />} />
-      <StatCard label="CC:Sale" value="10721:1" sub="Calls to sale" icon={<Phone size={16} />} />
+      <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
+        <div className="stat-header">
+          <span className="stat-label">Opportunities</span>
+          <div className="stat-icon-box"><Target size={16} /></div>
+        </div>
+        <div className="stat-value">{stats.totalOpportunities}</div>
+        <div className="stat-subtext">Active in pipeline</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Calendar')}>
+        <div className="stat-header">
+          <span className="stat-label">Appointments</span>
+          <div className="stat-icon-box"><Calendar size={16} /></div>
+        </div>
+        <div className="stat-value">87</div>
+        <div className="stat-subtext">Total</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Accounts')}>
+        <div className="stat-header">
+          <span className="stat-label">Sold</span>
+          <div className="stat-icon-box"><TrendingUp size={16} /></div>
+        </div>
+        <div className="stat-value">2</div>
+        <div className="stat-subtext">Total accounts</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Accounts')}>
+        <div className="stat-header">
+          <span className="stat-label">Conversion</span>
+          <div className="stat-icon-box"><BarChart3 size={16} /></div>
+        </div>
+        <div className="stat-value">0%</div>
+        <div className="stat-subtext">Opp to account</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
+        <div className="stat-header">
+          <span className="stat-label">CC:Sale</span>
+          <div className="stat-icon-box"><Phone size={16} /></div>
+        </div>
+        <div className="stat-value">10721:1</div>
+        <div className="stat-subtext">Calls to sale</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
     </section>
 
     <section className="pipeline-section">
@@ -1110,18 +1150,6 @@ const TeamMember = ({ name }) => (
   <div className="team-member">
     <div className="status-dot"></div>
     <span>{name}</span>
-  </div>
-);
-
-const StatCard = ({ label, value, sub, icon }) => (
-  <div className="stat-card">
-    <div className="stat-header">
-      <span className="stat-label">{label}</span>
-      <div className="stat-icon-box">{icon}</div>
-    </div>
-    <div className="stat-value">{value}</div>
-    <div className="stat-subtext">{sub}</div>
-    <div className="stat-link">View <ArrowRight size={12} /></div>
   </div>
 );
 
