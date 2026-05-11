@@ -715,6 +715,11 @@ const CalendarView = () => {
 };
 
 const UsersView = ({ onImport, onAdd, onEdit, onResetPassword }) => {
+  const [roleFilter, setRoleFilter] = useState('All Roles');
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+
+  const roles = ['All Roles', 'BDA', 'BDM', 'Admin'];
+
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -734,10 +739,28 @@ const UsersView = ({ onImport, onAdd, onEdit, onResetPassword }) => {
           <input type="text" placeholder="Search users..." />
         </div>
         <div className="dropdown-container">
-          <button className="filter-dropdown">
-            <span>All Roles</span>
+          <button className="filter-dropdown" onClick={() => setShowRoleDropdown(!showRoleDropdown)}>
+            <Filter size={16} />
+            <span>{roleFilter}</span>
             <ChevronDown size={14} />
           </button>
+          {showRoleDropdown && (
+            <div className="custom-dropdown">
+              {roles.map(role => (
+                <div 
+                  key={role} 
+                  className={`dropdown-item ${roleFilter === role ? 'active' : ''}`}
+                  onClick={() => {
+                    setRoleFilter(role);
+                    setShowRoleDropdown(false);
+                  }}
+                >
+                  {roleFilter === role && <Check size={16} />}
+                  <span style={{ marginLeft: roleFilter === role ? '0' : '26px' }}>{role}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
