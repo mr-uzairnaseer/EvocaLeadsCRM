@@ -1313,87 +1313,116 @@ const LeadDetailsView = ({ lead, onBack }) => {
 
   return (
     <div className="page-content">
-      <header className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-        <button className="btn-icon-only" onClick={onBack} style={{ background: '#f1f5f9', color: '#1e293b' }}>
+      <header className="details-header-main">
+        <button className="back-btn-circle" onClick={onBack}>
           <ChevronLeft size={20} />
         </button>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '4px' }}>
-            <h1 style={{ margin: 0 }}>{lead.name}</h1>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{lead.name}</h1>
             <span className="status-badge-new">New Lead</span>
           </div>
-          <p style={{ margin: 0 }}>ID: OPP-21354 • Created May 11, 2026</p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem', fontWeight: 500 }}>
+            ID: OPP-21354 • Created May 11, 2026 • Assigned to {lead.bda}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn-secondary"><Edit3 size={16} /> Edit</button>
-          <button className="btn-primary">Take Ownership</button>
+          <button className="btn-secondary" style={{ height: '42px' }}><Edit3 size={16} /> Edit Details</button>
+          <button className="btn-primary" style={{ height: '42px', padding: '0 1.5rem' }}>Take Ownership</button>
         </div>
       </header>
 
-      <div className="dashboard-bottom-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
-        <div style={{ display: 'flex', flex_direction: 'column', gap: '1.5rem' }}>
-          <div className="bottom-card">
-            <div className="card-header">
-              <div className="card-title">Lead Information</div>
-              <Building size={16} color="#9ca3af" />
+      <div className="details-grid">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="details-section">
+            <div className="card-header" style={{ marginBottom: '1.5rem' }}>
+              <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Lead Information</div>
+              <Building size={16} color="#94a3b8" />
             </div>
-            <div className="form-grid" style={{ marginTop: '1.5rem' }}>
+            <div className="form-grid">
               <div className="form-field">
-                <label>Contact Name</label>
-                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.contact}</div>
+                <div className="info-label">Contact Name</div>
+                <div className="info-value">{lead.contact}</div>
               </div>
               <div className="form-field">
-                <label>Postcode</label>
-                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.address}</div>
+                <div className="info-label">Postcode / Address</div>
+                <div className="info-value">{lead.address}</div>
               </div>
               <div className="form-field">
-                <label>Phone Number</label>
-                <div style={{ fontWeight: 700, color: '#2563eb', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="info-label">Phone Number</div>
+                <div className="info-value link">
                   {lead.phone} <Phone size={14} />
                 </div>
               </div>
               <div className="form-field">
-                <label>Email Address</label>
-                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.email}</div>
+                <div className="info-label">Email Address</div>
+                <div className="info-value">{lead.email}</div>
               </div>
               <div className="form-field">
-                <label>BDA</label>
-                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.bda}</div>
+                <div className="info-label">Assigned BDA</div>
+                <div className="info-value">{lead.bda}</div>
               </div>
               <div className="form-field">
-                <label>BDM</label>
-                <div style={{ fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{lead.bdm}</div>
+                <div className="info-label">Assigned BDM</div>
+                <div className="info-value">{lead.bdm}</div>
               </div>
             </div>
           </div>
 
-          <div className="bottom-card">
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div className="card-title">Internal Notes</div>
-              <button className="btn-icon-only"><Plus size={16} /></button>
+          <div className="details-section">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Internal Notes</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', cursor: 'pointer' }}>Add Note</div>
             </div>
-            <div style={{ marginTop: '1.5rem' }}>
-              <textarea 
-                className="form-field" 
-                placeholder="Add a private note for the team..." 
-                style={{ width: '100%', minHeight: '100px', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', resize: 'none' }}
-              ></textarea>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button className="btn-primary" style={{ height: '36px', fontSize: '0.8125rem' }}>Save Note</button>
-              </div>
+            <textarea 
+              placeholder="Add a private note for the team..." 
+              style={{ 
+                width: '100%', minHeight: '120px', padding: '1rem', 
+                border: '1px solid #f1f5f9', borderRadius: '10px', 
+                background: '#f8fafc', resize: 'none', fontSize: '0.875rem',
+                outline: 'none', border: '1px solid #e2e8f0'
+              }}
+            ></textarea>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button className="btn-primary" style={{ height: '36px', fontSize: '0.8125rem', padding: '0 1.25rem' }}>Save Note</button>
             </div>
           </div>
         </div>
 
-        <div className="bottom-card">
-          <div className="card-header">
-            <div className="card-title">Activity Timeline</div>
-            <Activity size={16} color="#9ca3af" />
+        <div className="details-section">
+          <div className="card-header" style={{ marginBottom: '1rem' }}>
+            <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Activity Timeline</div>
+            <Activity size={16} color="#94a3b8" />
           </div>
-          <div className="activity-list" style={{ marginTop: '1.5rem' }}>
-            <ActivityItem user="System" text="Lead details updated" time="1 hour ago" />
-            <ActivityItem user="Oleksiy Radchenko" text="First call attempt - no answer" time="2 hours ago" />
-            <ActivityItem user="System" text="New lead created in pipeline" time="May 11, 8:36 PM" />
+          <div className="details-timeline">
+            <div className="timeline-event">
+              <div className="timeline-dot"></div>
+              <div className="timeline-content">
+                <div className="timeline-text">Lead details updated</div>
+                <div className="timeline-time">System • 1 hour ago</div>
+              </div>
+            </div>
+            <div className="timeline-event">
+              <div className="timeline-dot"></div>
+              <div className="timeline-content">
+                <div className="timeline-text">First call attempt - no answer</div>
+                <div className="timeline-time">Oleksiy Radchenko • 2 hours ago</div>
+              </div>
+            </div>
+            <div className="timeline-event">
+              <div className="timeline-dot"></div>
+              <div className="timeline-content">
+                <div className="timeline-text">New lead created in pipeline</div>
+                <div className="timeline-time">System • May 11, 8:36 PM</div>
+              </div>
+            </div>
+            <div className="timeline-event" style={{ opacity: 0.5 }}>
+              <div className="timeline-dot" style={{ borderColor: '#e2e8f0' }}></div>
+              <div className="timeline-content">
+                <div className="timeline-text">Data imported via CSV</div>
+                <div className="timeline-time">System • May 11, 8:30 PM</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
