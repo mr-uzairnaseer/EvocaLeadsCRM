@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, LayoutDashboard, BarChart3, Settings, 
-  Plus, LogOut, Search, Filter, Mail, Phone, 
-  Building2, DollarSign, TrendingUp, CheckCircle2 
+  Plus, LogOut, Search, Filter,
+  Building2, ArrowUpRight
 } from 'lucide-react';
 import './index.css';
 
@@ -18,14 +18,11 @@ function App() {
   const [error, setError] = useState('');
   const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
   
-  // Form State
   const [showAddModal, setShowAddModal] = useState(false);
   const [newLead, setNewLead] = useState({ name: '', email: '', company: '', value: 0, status: 'New' });
 
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchData();
-    }
+    if (isLoggedIn) fetchData();
   }, [isLoggedIn]);
 
   const fetchData = async () => {
@@ -33,20 +30,16 @@ function App() {
       setLoading(true);
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
-
       const [leadsRes, statsRes] = await Promise.all([
         fetch(`${API_URL}/leads`, { headers }),
         fetch(`${API_URL}/stats`, { headers })
       ]);
-
       if (leadsRes.ok && statsRes.ok) {
         setLeads(await leadsRes.json());
         setStats(await statsRes.json());
-      } else if (leadsRes.status === 401) {
-        handleLogout();
-      }
+      } else if (leadsRes.status === 401) handleLogout();
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -67,11 +60,9 @@ function App() {
       if (res.ok) {
         localStorage.setItem('token', data.token);
         setIsLoggedIn(true);
-      } else {
-        setError(data.error || 'Invalid credentials');
-      }
+      } else setError(data.error || 'Invalid credentials');
     } catch (err) {
-      setError('Connection error. Check API/Vercel.');
+      setError('Connection failed.');
     } finally {
       setLoginLoading(false);
     }
@@ -100,27 +91,25 @@ function App() {
         fetchData();
       }
     } catch (err) {
-      alert('Error adding lead');
+      alert('Error');
     }
   };
 
   if (!isLoggedIn) {
     return (
       <div className="login-screen">
-        <form onSubmit={handleLogin} className="glass card animate-fade-in login-card">
-          <div className="logo-section">
-            <LayoutDashboard size={40} color="var(--primary)" />
-            <h1>LeadsCRM</h1>
+        <form onSubmit={handleLogin} className="login-card animate-fade-in">
+          <div className="brand" style={{ justifyContent: 'center' }}>
+            <div className="brand-logo"><LayoutDashboard size={20} /></div>
+            <span>LeadsCRM</span>
           </div>
-          <p className="login-subtitle">Enterprise Sales Management</p>
           {error && <div className="error-alert">{error}</div>}
           <div className="input-group">
-            <label>Email Address</label>
+            <label>Email</label>
             <input 
               type="email" 
               value={loginData.email} 
               onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-              required 
             />
           </div>
           <div className="input-group">
@@ -129,15 +118,12 @@ function App() {
               type="password" 
               value={loginData.password} 
               onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-              required 
             />
           </div>
-          <button type="submit" disabled={loginLoading} className="login-btn">
-            {loginLoading ? 'Authenticating...' : 'Enter Dashboard'}
+          <button type="submit" disabled={loginLoading} className="primary-btn" style={{ width: '100%', justifyContent: 'center' }}>
+            {loginLoading ? 'Authenticating...' : 'Sign In'}
           </button>
-          <div className="login-footer">
-            admin@leadscrm.com / admin_password_123
-          </div>
+          <div className="login-footer">admin@leadscrm.com / admin_password_123</div>
         </form>
       </div>
     );
@@ -145,45 +131,19 @@ function App() {
 
   return (
     <div className="app-container">
-      <aside className="sidebar glass">
+      <aside className="sidebar">
         <div className="brand">
-          <div className="brand-logo"><LayoutDashboard size={24} /></div>
+          <div className="brand-logo"><LayoutDashboard size={20} /></div>
           <span>LeadsCRM</span>
         </div>
-        
         <nav className="nav-menu">
-          <div 
-            className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setCurrentView('dashboard')}
-          >
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </div>
-          <div 
-            className={`nav-item ${currentView === 'leads' ? 'active' : ''}`}
-            onClick={() => setCurrentView('leads')}
-          >
-            <Users size={20} />
-            <span>Leads</span>
-          </div>
-          <div 
-            className={`nav-item ${currentView === 'analytics' ? 'active' : ''}`}
-            onClick={() => setCurrentView('analytics')}
-          >
-            <BarChart3 size={20} />
-            <span>Analytics</span>
-          </div>
-          <div 
-            className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentView('settings')}
-          >
-            <Settings size={20} />
-            <span>Settings</span>
-          </div>
+          <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" active={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
+          <NavItem icon={<Users size={18} />} label="Leads" active={currentView === 'leads'} onClick={() => setCurrentView('leads')} />
+          <NavItem icon={<BarChart3 size={18} />} label="Analytics" active={currentView === 'analytics'} onClick={() => setCurrentView('analytics')} />
+          <NavItem icon={<Settings size={18} />} label="Settings" active={currentView === 'settings'} onClick={() => setCurrentView('settings')} />
         </nav>
-
         <div className="logout-zone" onClick={handleLogout}>
-          <LogOut size={20} />
+          <LogOut size={18} />
           <span>Sign Out</span>
         </div>
       </aside>
@@ -191,119 +151,58 @@ function App() {
       <main className="main-content">
         <header className="main-header">
           <div>
-            <h1 className="view-title">
-              {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
-            </h1>
-            <p className="view-subtitle">Management Console</p>
+            <h1 className="view-title">{currentView.toUpperCase()}</h1>
+            <p className="view-subtitle">System Management Interface</p>
           </div>
-          <div className="header-actions">
-            <button className="primary-btn" onClick={() => setShowAddModal(true)}>
-              <Plus size={20} />
-              <span>Add Lead</span>
-            </button>
-          </div>
+          <button className="primary-btn" onClick={() => setShowAddModal(true)}>
+            <Plus size={18} />
+            <span>New Lead</span>
+          </button>
         </header>
 
         {currentView === 'dashboard' && (
-          <div className="view-container">
+          <div className="view-container animate-fade-in">
             <section className="stats-grid">
-              <StatCard label="Total Revenue" value={`$${stats.totalValue?.toLocaleString()}`} icon={<DollarSign color="var(--primary)" />} trend="+12%" />
-              <StatCard label="Total Leads" value={stats.totalLeads} icon={<Users color="var(--success)" />} trend="+5%" />
-              <StatCard label="Conversion" value={`${stats.conversionRate}%`} icon={<TrendingUp color="var(--warning)" />} trend="-2%" />
-              <StatCard label="Won Deals" value={stats.wonLeads} icon={<CheckCircle2 color="var(--primary)" />} trend="+8%" />
+              <StatCard label="Revenue" value={`$${stats.totalValue?.toLocaleString()}`} trend="+12% YoY" />
+              <StatCard label="Leads" value={stats.totalLeads} trend="+5.4%" />
+              <StatCard label="Conversion" value={`${stats.conversionRate}%`} trend="-0.2%" />
+              <StatCard label="Deals Won" value={stats.wonLeads} trend="+2.1%" />
             </section>
-
-            <section className="glass card recent-leads">
-              <div className="section-header">
-                <h3>Recent High-Value Leads</h3>
-              </div>
-              <LeadTable leads={leads.slice(0, 5)} />
-            </section>
+            <LeadTable leads={leads.slice(0, 5)} title="Recent Activity" />
           </div>
         )}
 
         {currentView === 'leads' && (
-          <div className="view-container">
-            <div className="filters-bar glass card">
-              <div className="search-box">
-                <Search size={18} />
-                <input type="text" placeholder="Search leads..." />
+          <div className="view-container animate-fade-in">
+            <div className="filters-bar" style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
+              <div className="input-group" style={{ flex: 1, margin: 0 }}>
+                <input type="text" placeholder="Search by name, company or email..." />
               </div>
-              <button className="secondary-btn"><Filter size={18} /> Filters</button>
+              <button className="secondary-btn">Search</button>
             </div>
-            <section className="glass card full-leads">
-              <LeadTable leads={leads} />
-            </section>
+            <LeadTable leads={leads} />
           </div>
         )}
 
-        {currentView === 'analytics' && (
-          <div className="view-container">
-            <div className="glass card analytics-placeholder">
-              <BarChart3 size={48} color="var(--primary)" />
-              <h3>Analytics Engine Coming Soon</h3>
-              <p>Advanced lead attribution and revenue forecasting.</p>
-            </div>
-          </div>
-        )}
-
-        {currentView === 'settings' && (
-          <div className="view-container">
-            <div className="glass card settings-placeholder">
-              <Settings size={48} color="var(--primary)" />
-              <h3>System Settings</h3>
-              <p>Configure API integrations and user roles.</p>
-            </div>
+        {(currentView === 'analytics' || currentView === 'settings') && (
+          <div className="view-container animate-fade-in" style={{ padding: '4rem', textAlign: 'center', border: '1px dashed var(--border)' }}>
+            <p style={{ color: 'var(--text-muted)' }}>This module is scheduled for the next deployment phase.</p>
           </div>
         )}
       </main>
 
       {showAddModal && (
         <div className="modal-overlay">
-          <div className="modal-content glass card animate-fade-in">
-            <h2>Add New Enterprise Lead</h2>
+          <div className="modal-content animate-fade-in">
+            <h2 style={{ marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Create Lead</h2>
             <form onSubmit={handleAddLead}>
-              <div className="input-group">
-                <label>Contact Name</label>
-                <input 
-                  type="text" 
-                  value={newLead.name} 
-                  onChange={(e) => setNewLead({...newLead, name: e.target.value})}
-                  required 
-                />
-              </div>
-              <div className="input-group">
-                <label>Email</label>
-                <input 
-                  type="email" 
-                  value={newLead.email} 
-                  onChange={(e) => setNewLead({...newLead, email: e.target.value})}
-                  required 
-                />
-              </div>
-              <div className="input-row">
-                <div className="input-group">
-                  <label>Company</label>
-                  <input 
-                    type="text" 
-                    value={newLead.company} 
-                    onChange={(e) => setNewLead({...newLead, company: e.target.value})}
-                    required 
-                  />
-                </div>
-                <div className="input-group">
-                  <label>Deal Value ($)</label>
-                  <input 
-                    type="number" 
-                    value={newLead.value} 
-                    onChange={(e) => setNewLead({...newLead, value: e.target.value})}
-                    required 
-                  />
-                </div>
-              </div>
+              <div className="input-group"><label>Full Name</label><input type="text" value={newLead.name} onChange={(e) => setNewLead({...newLead, name: e.target.value})} required /></div>
+              <div className="input-group"><label>Email Address</label><input type="email" value={newLead.email} onChange={(e) => setNewLead({...newLead, email: e.target.value})} required /></div>
+              <div className="input-group"><label>Company</label><input type="text" value={newLead.company} onChange={(e) => setNewLead({...newLead, company: e.target.value})} required /></div>
+              <div className="input-group"><label>Value ($)</label><input type="number" value={newLead.value} onChange={(e) => setNewLead({...newLead, value: e.target.value})} required /></div>
               <div className="modal-actions">
                 <button type="button" className="secondary-btn" onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button type="submit" className="primary-btn">Create Lead</button>
+                <button type="submit" className="primary-btn">Create</button>
               </div>
             </form>
           </div>
@@ -313,62 +212,37 @@ function App() {
   );
 }
 
-function StatCard({ label, value, icon, trend }) {
-  return (
-    <div className="card glass stat-card">
-      <div className="stat-header">
-        <div className="stat-icon">{icon}</div>
-        <span className="stat-trend">{trend}</span>
-      </div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-label">{label}</div>
-    </div>
-  );
-}
+const NavItem = ({ icon, label, active, onClick }) => (
+  <div className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>{icon}<span>{label}</span></div>
+);
 
-function LeadTable({ leads }) {
-  if (leads.length === 0) return <div className="empty-state">No leads found. Click "Add Lead" to start.</div>;
-  
-  return (
-    <div className="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Lead</th>
-            <th>Company</th>
-            <th>Status</th>
-            <th>Value</th>
-            <th>Action</th>
+const StatCard = ({ label, value, trend }) => (
+  <div className="stat-card">
+    <div className="stat-label">{label}</div>
+    <div className="stat-value">{value}</div>
+    <div className="stat-trend">{trend}</div>
+  </div>
+);
+
+const LeadTable = ({ leads, title }) => (
+  <div className="table-wrapper">
+    {title && <div style={{ padding: '1.5rem', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{title}</div>}
+    <table>
+      <thead><tr><th>Lead</th><th>Company</th><th>Status</th><th>Value</th><th></th></tr></thead>
+      <tbody>
+        {leads.length === 0 ? <tr><td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No records found.</td></tr> :
+        leads.map(lead => (
+          <tr key={lead._id}>
+            <td><div className="lead-name">{lead.name}</div><div className="lead-email">{lead.email}</div></td>
+            <td className="company-info">{lead.company}</td>
+            <td><span className={`badge badge-${lead.status.toLowerCase()}`}>{lead.status}</span></td>
+            <td style={{ fontWeight: 700 }}>${lead.value?.toLocaleString()}</td>
+            <td><ArrowUpRight size={16} style={{ cursor: 'pointer', opacity: 0.5 }} /></td>
           </tr>
-        </thead>
-        <tbody>
-          {leads.map(lead => (
-            <tr key={lead._id}>
-              <td>
-                <div className="lead-info">
-                  <span className="lead-name">{lead.name}</span>
-                  <span className="lead-email">{lead.email}</span>
-                </div>
-              </td>
-              <td>
-                <div className="company-info">
-                  <Building2 size={14} />
-                  <span>{lead.company}</span>
-                </div>
-              </td>
-              <td>
-                <span className={`badge badge-${lead.status.toLowerCase()}`}>
-                  {lead.status}
-                </span>
-              </td>
-              <td className="lead-value">${lead.value?.toLocaleString()}</td>
-              <td><button className="icon-btn">Edit</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
 
 export default App;
