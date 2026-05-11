@@ -47,6 +47,8 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetTargetUser, setResetTargetUser] = useState(null);
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -185,13 +187,23 @@ function App() {
         {activeTab === 'Accounts' && <AccountsView onImport={() => setShowImportModal(true)} />}
         {activeTab === 'Contact' && <ContactView />}
         {activeTab === 'Calendar' && <CalendarView />}
-        {activeTab === 'Users' && <UsersView onImport={() => setShowImportModal(true)} onAdd={() => setShowAddUserModal(true)} />}
+        {activeTab === 'Users' && (
+          <UsersView 
+            onImport={() => setShowImportModal(true)} 
+            onAdd={() => setShowAddUserModal(true)} 
+            onResetPassword={(name) => {
+              setResetTargetUser(name);
+              setShowResetPasswordModal(true);
+            }}
+          />
+        )}
       </main>
 
       {/* Modals */}
       {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
       {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} />}
       {showAddUserModal && <AddUserModal onClose={() => setShowAddUserModal(false)} />}
+      {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} />}
       
       {/* Search Popup */}
       {showSearchPopup && <SearchPopup onClose={() => setShowSearchPopup(false)} />}
@@ -537,7 +549,7 @@ const CalendarView = () => {
   );
 };
 
-const UsersView = ({ onImport, onAdd }) => {
+const UsersView = ({ onImport, onAdd, onResetPassword }) => {
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -565,20 +577,20 @@ const UsersView = ({ onImport, onAdd }) => {
       </div>
 
       <div className="users-grid">
-        <UserCard initials="VP" name="Vandan Popat" handle="@vandan.p" email="vandan.p@mypaymentzen.co.uk" role="ADMIN" />
-        <UserCard initials="OR" name="Oleksiy Radchenko" handle="@oleksiy.r" email="oleksiy.r@mypaymentzen.co.uk" role="ADMIN" />
-        <UserCard initials="JC" name="Janey Chudasama" handle="@janey.c" email="janey.c@mypaymentzen.co.uk" role="ADMIN" />
-        <UserCard initials="JK" name="James King" handle="@jimmybigburgers" email="jimmybigburgers@gmail.com" role="ADMIN" />
-        <UserCard initials="AV" name="Aivi Verousi" handle="@aivi.v" email="aivi.v@mypaymentzen.co.uk" role="ADMIN" />
-        <UserCard initials="AW" name="Aaron wake" handle="@aaron" email="aaron@paymetryx.com" role="BDM" />
-        <UserCard initials="U" name="Umair" handle="@mr.umairnaseer" email="mr.umairnaseer@gmail.com" role="ADMIN" />
-        <UserCard initials="JK" name="James King" handle="@James King" email="james.k@mypaymentzen.co.uk" phone="07568263874" role="ADMIN" />
+        <UserCard initials="VP" name="Vandan Popat" handle="@vandan.p" email="vandan.p@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Vandan Popat")} />
+        <UserCard initials="OR" name="Oleksiy Radchenko" handle="@oleksiy.r" email="oleksiy.r@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Oleksiy Radchenko")} />
+        <UserCard initials="JC" name="Janey Chudasama" handle="@janey.c" email="janey.c@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Janey Chudasama")} />
+        <UserCard initials="JK" name="James King" handle="@jimmybigburgers" email="jimmybigburgers@gmail.com" role="ADMIN" onReset={() => onResetPassword("James King")} />
+        <UserCard initials="AV" name="Aivi Verousi" handle="@aivi.v" email="aivi.v@mypaymentzen.co.uk" role="ADMIN" onReset={() => onResetPassword("Aivi Verousi")} />
+        <UserCard initials="AW" name="Aaron wake" handle="@aaron" email="aaron@paymetryx.com" role="BDM" onReset={() => onResetPassword("Aaron wake")} />
+        <UserCard initials="U" name="Umair" handle="@mr.umairnaseer" email="mr.umairnaseer@gmail.com" role="ADMIN" onReset={() => onResetPassword("Umair")} />
+        <UserCard initials="JK" name="James King" handle="@James King" email="james.k@mypaymentzen.co.uk" phone="07568263874" role="ADMIN" onReset={() => onResetPassword("James King")} />
       </div>
     </div>
   );
 };
 
-const UserCard = ({ initials, name, handle, email, phone, role }) => (
+const UserCard = ({ initials, name, handle, email, phone, role, onReset }) => (
   <div className="user-card">
     <div className="user-card-header">
       <div className="user-card-avatar">{initials}</div>
@@ -595,7 +607,7 @@ const UserCard = ({ initials, name, handle, email, phone, role }) => (
     <div className="user-card-footer">
       <button className="user-action-btn"><Edit3 size={16} /></button>
       <button className="user-action-btn"><UserPlus size={16} /></button>
-      <button className="user-action-btn"><Key size={16} /></button>
+      <button className="user-action-btn" onClick={onReset}><Key size={16} /></button>
       <button className="user-action-btn delete"><Trash2 size={16} /></button>
     </div>
   </div>
@@ -966,6 +978,52 @@ const AddUserModal = ({ onClose }) => (
     </div>
   </div>
 );
+
+const ResetPasswordModal = ({ user, onClose }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card" style={{ maxWidth: '440px' }}>
+        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Reset Password</h2>
+          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="modal-body" style={{ paddingTop: '0.5rem' }}>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+            Setting a new password for <span style={{ color: '#1e293b', fontWeight: 700 }}>{user}</span>.
+          </p>
+          
+          <div className="form-field">
+            <label style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>New Password</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="Min. 6 characters" 
+                style={{ paddingRight: '4rem' }}
+              />
+              <button 
+                className="show-password-btn" 
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8125rem',
+                  fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer" style={{ borderTop: 'none', gap: '1rem', padding: '0 1.5rem 1.5rem' }}>
+          <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
+          <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', background: '#60a5fa' }} onClick={onClose}>Reset Password</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ImportLeadsModal = ({ onClose }) => (
   <div className="modal-overlay">
