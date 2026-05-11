@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Users, LayoutDashboard, Target, Building2, UserCircle, 
   Calendar, ChevronRight, LogOut, Bell, User,
-  PanelLeft, Search, Moon, Sun, BarChart3, RefreshCw, 
+  PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
   Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building,
   MessageSquare, Eye, PlayCircle, Clock, Mail, Edit3, UserPlus, Key, Trash2
@@ -13,10 +13,9 @@ function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
 
   return (
-    <div className={`app-container ${darkMode ? 'dark-theme' : ''}`}>
+    <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -125,9 +124,6 @@ function App() {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="nav-action-btn"><Bell size={18} /></button>
-            <button className="nav-action-btn" onClick={() => setDarkMode(!darkMode)}>
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
           </div>
         </header>
 
@@ -164,7 +160,7 @@ const DashboardView = () => (
     <section className="pipeline-section">
       <div className="pipeline-top">
         <div className="pipeline-title">Pipeline</div>
-        <div className="pipeline-subtitle-meta"><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
+        <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
       </div>
       <div className="pipeline-stepper">
         <PipelineStep num="21269" label="New" />
@@ -181,8 +177,8 @@ const DashboardView = () => (
     <div className="dashboard-bottom-grid">
       <div className="bottom-card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div className="card-title">Recent Opportunities</div>
-          <div className="card-link">View All</div>
+          <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Recent Opportunities</div>
+          <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>View All</div>
         </div>
         <div className="opportunity-list-clean">
           <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" />
@@ -196,7 +192,7 @@ const DashboardView = () => (
       <div className="bottom-card">
         <div className="card-header">
           <div className="card-title">Recent Activity</div>
-          <Activity size={16} className="activity-header-icon" />
+          <Activity size={16} color="#9ca3af" />
         </div>
         <div className="activity-list">
           <ActivityItem user="Oleksiy Radchenko" text="owner not in, callbacks cheduled" time="May 11, 8:36 PM" />
@@ -271,7 +267,7 @@ const OpportunitiesView = ({ onAdd, onImport }) => {
           )}
         </div>
 
-        <button className="btn-secondary btn-items">My Items</button>
+        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
         <div className="view-toggle">
           <button className="view-btn"><Grid size={16} /></button>
           <button className="view-btn active"><List size={16} /></button>
@@ -373,7 +369,7 @@ const AccountsView = ({ onImport }) => {
           )}
         </div>
 
-        <button className="btn-secondary btn-items">My Items</button>
+        <button className="btn-secondary" style={{ padding: '0 1rem' }}>My Items</button>
         <div className="view-toggle">
           <button className="view-btn"><Grid size={16} /></button>
           <button className="view-btn active"><List size={16} /></button>
@@ -452,7 +448,7 @@ const CalendarView = () => {
     <div className="page-content">
       {/* Alert Banner */}
       <div className="calendar-alert-banner">
-        <Bell size={18} className="alert-icon" />
+        <Bell size={18} />
         <div className="alert-content">
           <div className="alert-title">You have 1 callback today</div>
           <div className="alert-item"><Phone size={14} /> 7a Coffee Shop</div>
@@ -535,8 +531,8 @@ const UserCard = ({ initials, name, handle, email, phone, role }) => (
       <div className="user-card-name">{name}</div>
       <div className="user-card-handle">{handle}</div>
       <div className="user-card-contact">
-        <div className="contact-item"><Mail size={14} className="contact-icon" /> {email}</div>
-        {phone && <div className="contact-item"><Phone size={14} className="contact-icon" /> {phone}</div>}
+        <div className="contact-item"><Mail size={14} /> {email}</div>
+        {phone && <div className="contact-item"><Phone size={14} /> {phone}</div>}
       </div>
     </div>
     <div className="user-card-footer">
@@ -602,7 +598,7 @@ const CalendarDayView = () => (
         <div className="event-accent"></div>
         <div className="event-info">
           <div className="event-header">
-            <Phone size={18} className="event-type-icon" />
+            <Phone size={18} color="#10b981" />
             <span className="event-title">7a Coffee Shop</span>
             <span className="status-badge approved" style={{ background: '#dcfce7', color: '#059669' }}>Callback</span>
             <span className="new-badge">new</span>
@@ -675,7 +671,7 @@ const ContactCard = ({ initial, name, business, phone, type }) => (
     <div className="contact-main">
       <div className="contact-name">{name || business}</div>
       <div className="contact-business">
-        <Building size={14} className="contact-business-icon" />
+        <Building size={14} color="#94a3b8" />
         <span>{business}</span>
       </div>
     </div>
