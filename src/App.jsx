@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  Users, LayoutDashboard, BarChart3, Settings, 
+  Plus, LogOut, Search, Filter, Mail, Phone, 
+  Building2, DollarSign, TrendingUp, CheckCircle2 
+} from 'lucide-react';
 import './index.css';
 
 const API_URL = '/api';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [currentView, setCurrentView] = useState('dashboard');
   const [leads, setLeads] = useState([]);
   const [stats, setStats] = useState({ totalLeads: 0, wonLeads: 0, totalValue: 0, conversionRate: 0 });
   const [loading, setLoading] = useState(true);
-  const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loginData, setLoginData] = useState({ email: 'admin@leadscrm.com', password: 'admin_password_123' });
+  
+  // Form State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newLead, setNewLead] = useState({ name: '', email: '', company: '', value: 0, status: 'New' });
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -47,27 +57,21 @@ function App() {
     setLoginLoading(true);
     setError('');
     try {
-      // Ensure DB is seeded
-      console.log('Checking system health...');
       await fetch(`${API_URL}/health`);
-
-      console.log('Attempting login...');
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData)
       });
-      
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('token', data.token);
         setIsLoggedIn(true);
       } else {
-        setError(data.error || 'Invalid email or password');
+        setError(data.error || 'Invalid credentials');
       }
     } catch (err) {
-      console.error('Login error details:', err);
-      setError(`Connection failed: ${err.message || 'Unknown error'}. Check if the API is running.`);
+      setError('Connection error. Check API/Vercel.');
     } finally {
       setLoginLoading(false);
     }
@@ -78,14 +82,40 @@ function App() {
     setIsLoggedIn(false);
   };
 
+  const handleAddLead = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/leads`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newLead)
+      });
+      if (res.ok) {
+        setShowAddModal(false);
+        setNewLead({ name: '', email: '', company: '', value: 0, status: 'New' });
+        fetchData();
+      }
+    } catch (err) {
+      alert('Error adding lead');
+    }
+  };
+
   if (!isLoggedIn) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <form onSubmit={handleLogin} className="glass card animate-fade-in" style={{ width: '400px', padding: '3rem' }}>
-          <h2 style={{ color: 'var(--primary)', marginBottom: '1.5rem', textAlign: 'center' }}>LeadsCRM Login</h2>
-          {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
+      <div className="login-screen">
+        <form onSubmit={handleLogin} className="glass card animate-fade-in login-card">
+          <div className="logo-section">
+            <LayoutDashboard size={40} color="var(--primary)" />
+            <h1>LeadsCRM</h1>
+          </div>
+          <p className="login-subtitle">Enterprise Sales Management</p>
+          {error && <div className="error-alert">{error}</div>}
+          <div className="input-group">
+            <label>Email Address</label>
             <input 
               type="email" 
               value={loginData.email} 
@@ -93,8 +123,8 @@ function App() {
               required 
             />
           </div>
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
+          <div className="input-group">
+            <label>Password</label>
             <input 
               type="password" 
               value={loginData.password} 
@@ -102,12 +132,12 @@ function App() {
               required 
             />
           </div>
-          <button type="submit" disabled={loginLoading} style={{ width: '100%', opacity: loginLoading ? 0.7 : 1 }}>
-            {loginLoading ? 'Checking system...' : 'Enter Dashboard'}
+          <button type="submit" disabled={loginLoading} className="login-btn">
+            {loginLoading ? 'Authenticating...' : 'Enter Dashboard'}
           </button>
-          <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-            Default: admin@leadscrm.com / admin_password_123
-          </p>
+          <div className="login-footer">
+            admin@leadscrm.com / admin_password_123
+          </div>
         </form>
       </div>
     );
@@ -116,84 +146,227 @@ function App() {
   return (
     <div className="app-container">
       <aside className="sidebar glass">
-        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '1rem' }}>
-          LeadsCRM
+        <div className="brand">
+          <div className="brand-logo"><LayoutDashboard size={24} /></div>
+          <span>LeadsCRM</span>
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <div className="sidebar-item active">Dashboard</div>
-          <div className="sidebar-item">Leads</div>
-          <div className="sidebar-item">Analytics</div>
-          <div onClick={handleLogout} className="sidebar-item" style={{ marginTop: 'auto', color: 'var(--danger)' }}>Logout</div>
+        
+        <nav className="nav-menu">
+          <div 
+            className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setCurrentView('dashboard')}
+          >
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </div>
+          <div 
+            className={`nav-item ${currentView === 'leads' ? 'active' : ''}`}
+            onClick={() => setCurrentView('leads')}
+          >
+            <Users size={20} />
+            <span>Leads</span>
+          </div>
+          <div 
+            className={`nav-item ${currentView === 'analytics' ? 'active' : ''}`}
+            onClick={() => setCurrentView('analytics')}
+          >
+            <BarChart3 size={20} />
+            <span>Analytics</span>
+          </div>
+          <div 
+            className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
+            onClick={() => setCurrentView('settings')}
+          >
+            <Settings size={20} />
+            <span>Settings</span>
+          </div>
         </nav>
+
+        <div className="logout-zone" onClick={handleLogout}>
+          <LogOut size={20} />
+          <span>Sign Out</span>
+        </div>
       </aside>
 
       <main className="main-content">
-        <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <header className="main-header">
           <div>
-            <h1 className="animate-fade-in">Enterprise Dashboard</h1>
-            <h2 className="animate-fade-in">Dynamic overview of your sales funnel</h2>
+            <h1 className="view-title">
+              {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+            </h1>
+            <p className="view-subtitle">Management Console</p>
           </div>
-          <button onClick={fetchData}>Refresh Data</button>
+          <div className="header-actions">
+            <button className="primary-btn" onClick={() => setShowAddModal(true)}>
+              <Plus size={20} />
+              <span>Add Lead</span>
+            </button>
+          </div>
         </header>
 
-        <section className="stats-grid">
-          <div className="card glass animate-fade-in">
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Total Revenue</p>
-            <h3>${stats.totalValue?.toLocaleString()}</h3>
-          </div>
-          <div className="card glass animate-fade-in">
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Total Leads</p>
-            <h3>{stats.totalLeads}</h3>
-          </div>
-          <div className="card glass animate-fade-in">
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Conversion Rate</p>
-            <h3>{stats.conversionRate}%</h3>
-          </div>
-          <div className="card glass animate-fade-in">
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Won Leads</p>
-            <h3>{stats.wonLeads}</h3>
-          </div>
-        </section>
+        {currentView === 'dashboard' && (
+          <div className="view-container">
+            <section className="stats-grid">
+              <StatCard label="Total Revenue" value={`$${stats.totalValue?.toLocaleString()}`} icon={<DollarSign color="var(--primary)" />} trend="+12%" />
+              <StatCard label="Total Leads" value={stats.totalLeads} icon={<Users color="var(--success)" />} trend="+5%" />
+              <StatCard label="Conversion" value={`${stats.conversionRate}%`} icon={<TrendingUp color="var(--warning)" />} trend="-2%" />
+              <StatCard label="Won Deals" value={stats.wonLeads} icon={<CheckCircle2 color="var(--primary)" />} trend="+8%" />
+            </section>
 
-        <section className="glass card animate-fade-in" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem' }}>Real-Time Leads</h3>
+            <section className="glass card recent-leads">
+              <div className="section-header">
+                <h3>Recent High-Value Leads</h3>
+              </div>
+              <LeadTable leads={leads.slice(0, 5)} />
+            </section>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            {loading ? <p>Loading data...</p> : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Company</th>
-                    <th>Status</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leads.length === 0 ? (
-                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>No leads found. Start by adding some!</td></tr>
-                  ) : leads.map(lead => (
-                    <tr key={lead._id}>
-                      <td>
-                        <div style={{ fontWeight: '600' }}>{lead.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{lead.email}</div>
-                      </td>
-                      <td>{lead.company}</td>
-                      <td>
-                        <span className={`badge badge-${lead.status.toLowerCase()}`}>
-                          {lead.status}
-                        </span>
-                      </td>
-                      <td style={{ fontWeight: '600' }}>${lead.value?.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        )}
+
+        {currentView === 'leads' && (
+          <div className="view-container">
+            <div className="filters-bar glass card">
+              <div className="search-box">
+                <Search size={18} />
+                <input type="text" placeholder="Search leads..." />
+              </div>
+              <button className="secondary-btn"><Filter size={18} /> Filters</button>
+            </div>
+            <section className="glass card full-leads">
+              <LeadTable leads={leads} />
+            </section>
           </div>
-        </section>
+        )}
+
+        {currentView === 'analytics' && (
+          <div className="view-container">
+            <div className="glass card analytics-placeholder">
+              <BarChart3 size={48} color="var(--primary)" />
+              <h3>Analytics Engine Coming Soon</h3>
+              <p>Advanced lead attribution and revenue forecasting.</p>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'settings' && (
+          <div className="view-container">
+            <div className="glass card settings-placeholder">
+              <Settings size={48} color="var(--primary)" />
+              <h3>System Settings</h3>
+              <p>Configure API integrations and user roles.</p>
+            </div>
+          </div>
+        )}
       </main>
+
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-content glass card animate-fade-in">
+            <h2>Add New Enterprise Lead</h2>
+            <form onSubmit={handleAddLead}>
+              <div className="input-group">
+                <label>Contact Name</label>
+                <input 
+                  type="text" 
+                  value={newLead.name} 
+                  onChange={(e) => setNewLead({...newLead, name: e.target.value})}
+                  required 
+                />
+              </div>
+              <div className="input-group">
+                <label>Email</label>
+                <input 
+                  type="email" 
+                  value={newLead.email} 
+                  onChange={(e) => setNewLead({...newLead, email: e.target.value})}
+                  required 
+                />
+              </div>
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Company</label>
+                  <input 
+                    type="text" 
+                    value={newLead.company} 
+                    onChange={(e) => setNewLead({...newLead, company: e.target.value})}
+                    required 
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Deal Value ($)</label>
+                  <input 
+                    type="number" 
+                    value={newLead.value} 
+                    onChange={(e) => setNewLead({...newLead, value: e.target.value})}
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="secondary-btn" onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button type="submit" className="primary-btn">Create Lead</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon, trend }) {
+  return (
+    <div className="card glass stat-card">
+      <div className="stat-header">
+        <div className="stat-icon">{icon}</div>
+        <span className="stat-trend">{trend}</span>
+      </div>
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+function LeadTable({ leads }) {
+  if (leads.length === 0) return <div className="empty-state">No leads found. Click "Add Lead" to start.</div>;
+  
+  return (
+    <div className="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Lead</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Value</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {leads.map(lead => (
+            <tr key={lead._id}>
+              <td>
+                <div className="lead-info">
+                  <span className="lead-name">{lead.name}</span>
+                  <span className="lead-email">{lead.email}</span>
+                </div>
+              </td>
+              <td>
+                <div className="company-info">
+                  <Building2 size={14} />
+                  <span>{lead.company}</span>
+                </div>
+              </td>
+              <td>
+                <span className={`badge badge-${lead.status.toLowerCase()}`}>
+                  {lead.status}
+                </span>
+              </td>
+              <td className="lead-value">${lead.value?.toLocaleString()}</td>
+              <td><button className="icon-btn">Edit</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
