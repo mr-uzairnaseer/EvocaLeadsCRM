@@ -5,7 +5,8 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['Admin', 'Sales'], default: 'Sales' },
+  role: { type: String, enum: ['Admin', 'BDA', 'BDM'], default: 'BDA' },
+  handle: { type: String }, // e.g. @name
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -20,3 +21,4 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 module.exports = mongoose.model('User', userSchema);
+

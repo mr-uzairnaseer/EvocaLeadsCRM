@@ -1,17 +1,25 @@
 const mongoose = require('mongoose');
 
 const leadSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  company: { type: String, required: true },
-  value: { type: Number, default: 0 },
+  business: { type: String, required: true },
+  contactName: { type: String, required: true },
+  email: { type: String },
+  phone: { type: String },
+  postcode: { type: String },
   status: { 
     type: String, 
     enum: ['New', 'Contacted', 'Qualified', 'Booked', 'Approved', 'Delivered', 'Transacting', 'Non-Trans'],
     default: 'New' 
   },
+  value: { type: Number, default: 0 },
+  provider: { type: String },
+  bda: { type: String },
+  bdm: { type: String },
+  callback: { type: String }, // Can be ISO date string or formatted string
+  volume: { type: String },
+  mid: { type: String },
   notes: { type: String },
-  assignedTo: { type: String, default: 'Unassigned' },
+  address: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -22,3 +30,4 @@ leadSchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('Lead', leadSchema);
+

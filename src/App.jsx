@@ -9,36 +9,7 @@ import {
 } from 'lucide-react';
 import './index.css';
 
-const SEARCH_DATA = [
-  // Opportunities
-  { id: 'o1', type: 'Opportunity', title: 'Berkeley Heath Auto Centre', subtitle: 'Paul • GL13 9ET', icon: 'Target' },
-  { id: 'o2', type: 'Opportunity', title: 'Martin Richings Motor Repairs', subtitle: 'Martin • BS37 6AA', icon: 'Target' },
-  { id: 'o3', type: 'Opportunity', title: 'Motortech', subtitle: 'Steve • GL7 1YG', icon: 'Target' },
-  { id: 'o4', type: 'Opportunity', title: 'Circuit Motors Ltd', subtitle: 'SN14 7HB', icon: 'Target' },
-  { id: 'o5', type: 'Opportunity', title: 'Purley Road Garage', subtitle: 'GL7 1ER', icon: 'Target' },
-  { id: 'o6', type: 'Opportunity', title: 'OPD Auto Services Ltd', subtitle: 'GL6 7AS', icon: 'Target' },
-  { id: 'o7', type: 'Opportunity', title: 'Holbrook Garage', subtitle: 'Fam • GL6 7BX', icon: 'Target' },
-  { id: 'o8', type: 'Opportunity', title: 'Gloucester Centre for MG\'s', subtitle: 'GL10 2LA', icon: 'Target' },
-  
-  // Accounts
-  { id: 'a1', type: 'Account', title: 'Frankham Motor Services', subtitle: 'Drena • SN15 4NX', icon: 'Building2' },
-  { id: 'a2', type: 'Account', title: 'Ian Paull Car Repairs', subtitle: 'Cornwall', icon: 'Building2' },
-  
-  // Users
-  { id: 'u1', type: 'User', title: 'Vandan Popat', subtitle: '@vandan.p • ADMIN', icon: 'UserCircle' },
-  { id: 'u2', type: 'User', title: 'Oleksiy Radchenko', subtitle: '@oleksiy.r • ADMIN', icon: 'UserCircle' },
-  { id: 'u3', type: 'User', title: 'Janey Chudasama', subtitle: '@janey.c • ADMIN', icon: 'UserCircle' },
-  { id: 'u4', type: 'User', title: 'James King', subtitle: '@jimmybigburgers • ADMIN', icon: 'UserCircle' },
-  { id: 'u5', type: 'User', title: 'Aivi Verousi', subtitle: '@aivi.v • ADMIN', icon: 'UserCircle' },
-  { id: 'u6', type: 'User', title: 'Aaron wake', subtitle: '@aaron • BDM', icon: 'UserCircle' },
-  { id: 'u7', type: 'User', title: 'Umair', subtitle: '@mr.umairnaseer • ADMIN', icon: 'UserCircle' },
 
-  // Appointments
-  { id: 'ap1', type: 'Appointment', title: '7a Coffee Shop', subtitle: 'Callback • 9:00 AM', icon: 'Calendar' },
-  { id: 'ap2', type: 'Appointment', title: 'Nile Valley Cafe', subtitle: 'Appointment', icon: 'Calendar' },
-  { id: 'ap3', type: 'Appointment', title: 'Hush Hair & Beauty', subtitle: 'Appointment', icon: 'Calendar' },
-  { id: 'ap4', type: 'Appointment', title: 'Sarah\'s Cake Shop', subtitle: 'Appointment', icon: 'Calendar' },
-];
 
 function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -57,6 +28,45 @@ function App() {
   const [accountsViewMode, setAccountsViewMode] = useState('list');
   const [selectedLead, setSelectedLead] = useState(null);
   const [importType, setImportType] = useState('leads');
+  const [leads, setLeads] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+  const [activityList, setActivityList] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const [leadsRes, usersRes, activityRes, statsRes] = await Promise.all([
+        fetch('/api/leads'),
+        fetch('/api/users'),
+        fetch('/api/activity'),
+        fetch('/api/stats')
+      ]);
+      
+      const leadsData = await leadsRes.json();
+      const usersData = await usersRes.json();
+      const activityData = await activityRes.json();
+      const statsData = await statsRes.json();
+      
+      setLeads(Array.isArray(leadsData) ? leadsData : []);
+      setUsersList(Array.isArray(usersData) ? usersData : []);
+      setActivityList(Array.isArray(activityData) ? activityData : []);
+      setDashboardStats(statsData);
+      setLoading(false);
+    } catch (e) {
+      console.error('Error fetching data:', e);
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleLeadAction = async (action, data) => {
+    // Placeholder for global actions like refresh after edit/add
+    await fetchData();
+  };
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -140,18 +150,16 @@ function App() {
           <div className="nav-section-label">Team</div>
           <div className="team-subtitle">ADMIN</div>
           <div className="team-list">
-            <TeamMember name="Vandan Popat" />
-            <TeamMember name="Oleksiy Radchenko" />
-            <TeamMember name="Janey Chudasama" />
-            <TeamMember name="James King" />
-            <TeamMember name="Aivi Verousi" />
-            <TeamMember name="Umair" />
-            <TeamMember name="James King" />
+            {usersList.filter(u => u.role === 'Admin').map(u => (
+              <TeamMember key={u._id} name={u.name} />
+            ))}
           </div>
 
-          <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>BDM</div>
+          <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>BDM / BDA</div>
           <div className="team-list">
-            <TeamMember name="Aaron wake" />
+            {usersList.filter(u => ['BDM', 'BDA'].includes(u.role)).map(u => (
+              <TeamMember key={u._id} name={u.name} />
+            ))}
           </div>
         </div>
 
@@ -197,83 +205,106 @@ function App() {
               <NotificationsPopup 
                 onClose={() => setShowNotifications(false)} 
                 onNavigate={() => setActiveTab('Notifications')}
+                activity={activityList}
               />
             )}
           </div>
         </header>
 
-        {activeTab === 'Dashboard' && (
-          <DashboardView 
-            stats={{totalOpportunities: "21354"}} 
-            onNavigate={setActiveTab} 
-            onLeadClick={(lead) => {
-              setSelectedLead(lead);
-              setActiveTab('LeadDetails');
-            }}
-          />
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <RefreshCw size={32} className="animate-spin" />
+          </div>
+        ) : (
+          <>
+            {activeTab === 'Dashboard' && (
+              <DashboardView 
+                stats={dashboardStats} 
+                leads={leads}
+                activityList={activityList}
+                onNavigate={setActiveTab} 
+                onLeadClick={(lead) => {
+                  setSelectedLead(lead);
+                  setActiveTab('LeadDetails');
+                }}
+              />
+            )}
+            {activeTab === 'LeadDetails' && (
+              <LeadDetailsView 
+                lead={selectedLead} 
+                onBack={() => setActiveTab('Dashboard')} 
+                onSuccess={fetchData}
+              />
+            )}
+            {activeTab === 'Opportunities' && (
+              <OpportunitiesView 
+                leads={leads}
+                onAdd={() => setShowAddModal(true)} 
+                onImport={() => { setImportType('leads'); setShowImportModal(true); }} 
+                viewMode={opportunitiesViewMode}
+                setViewMode={setOpportunitiesViewMode}
+                onLeadClick={(lead) => {
+                  setSelectedLead(lead);
+                  setActiveTab('LeadDetails');
+                }}
+              />
+            )}
+            {activeTab === 'Accounts' && (
+              <AccountsView 
+                leads={leads.filter(l => ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status))}
+                onImport={() => { setImportType('accounts'); setShowImportModal(true); }} 
+                viewMode={accountsViewMode}
+                setViewMode={setAccountsViewMode}
+                onLeadClick={(lead) => {
+                  setSelectedLead(lead);
+                  setActiveTab('LeadDetails');
+                }}
+              />
+            )}
+            {activeTab === 'Contact' && <ContactView leads={leads} />}
+            {activeTab === 'Calendar' && <CalendarView leads={leads} />}
+            {activeTab === 'Users' && (
+              <UsersView 
+                users={usersList}
+                onImport={() => setShowImportModal(true)} 
+                onAdd={() => {
+                  setUserModalMode('add');
+                  setSelectedUser(null);
+                  setShowUserModal(true);
+                }} 
+                onEdit={(user) => {
+                  setUserModalMode('edit');
+                  setSelectedUser(user);
+                  setShowUserModal(true);
+                }}
+                onResetPassword={(name) => {
+                  setResetTargetUser(name);
+                  setShowResetPasswordModal(true);
+                }}
+              />
+            )}
+            {activeTab === 'Notifications' && <NotificationsView activity={activityList} />}
+          </>
         )}
-        {activeTab === 'LeadDetails' && (
-          <LeadDetailsView 
-            lead={selectedLead} 
-            onBack={() => setActiveTab('Dashboard')} 
-          />
-        )}
-        {activeTab === 'Opportunities' && (
-          <OpportunitiesView 
-            onAdd={() => setShowAddModal(true)} 
-            onImport={() => { setImportType('leads'); setShowImportModal(true); }} 
-            viewMode={opportunitiesViewMode}
-            setViewMode={setOpportunitiesViewMode}
-            onLeadClick={(lead) => {
-              setSelectedLead(lead);
-              setActiveTab('LeadDetails');
-            }}
-          />
-        )}
-        {activeTab === 'Accounts' && (
-          <AccountsView 
-            onImport={() => { setImportType('accounts'); setShowImportModal(true); }} 
-            viewMode={accountsViewMode}
-            setViewMode={setAccountsViewMode}
-          />
-        )}
-        {activeTab === 'Contact' && <ContactView />}
-        {activeTab === 'Calendar' && <CalendarView />}
-        {activeTab === 'Users' && (
-          <UsersView 
-            onImport={() => { setImportType('users'); setShowImportModal(true); }} 
-            onAdd={() => {
-              setUserModalMode('add');
-              setSelectedUser(null);
-              setShowUserModal(true);
-            }} 
-            onEdit={(user) => {
-              setUserModalMode('edit');
-              setSelectedUser(user);
-              setShowUserModal(true);
-            }}
-            onResetPassword={(name) => {
-              setResetTargetUser(name);
-              setShowResetPasswordModal(true);
-            }}
-          />
-        )}
-        {activeTab === 'Notifications' && <NotificationsView />}
       </main>
 
       {/* Modals */}
-      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
-      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} />}
-      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} />}
+      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} onSuccess={fetchData} />}
+      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} onSuccess={fetchData} />}
+      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} onSuccess={fetchData} />}
       {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} />}
       
       {/* Search Popup */}
-      {showSearchPopup && <SearchPopup onClose={() => setShowSearchPopup(false)} />}
+      {showSearchPopup && <SearchPopup onClose={() => setShowSearchPopup(false)} leads={leads} users={usersList} onLeadClick={(lead) => {
+        setSelectedLead(lead);
+        setActiveTab('LeadDetails');
+        setShowSearchPopup(false);
+      }} />}
     </div>
   );
 }
 
-const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
+const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) => (
   <div className="page-content">
     <header className="page-header">
       <h1>Dashboard</h1>
@@ -286,7 +317,7 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
           <span className="stat-label">Opportunities</span>
           <div className="stat-icon-box"><Target size={16} /></div>
         </div>
-        <div className="stat-value">{stats.totalOpportunities}</div>
+        <div className="stat-value">{stats?.totalLeads || 0}</div>
         <div className="stat-subtext">Active in pipeline</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
@@ -295,7 +326,7 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
           <span className="stat-label">Appointments</span>
           <div className="stat-icon-box"><Calendar size={16} /></div>
         </div>
-        <div className="stat-value">87</div>
+        <div className="stat-value">{stats?.pipeline?.Booked || 0}</div>
         <div className="stat-subtext">Total</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
@@ -304,7 +335,7 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
           <span className="stat-label">Sold</span>
           <div className="stat-icon-box"><TrendingUp size={16} /></div>
         </div>
-        <div className="stat-value">2</div>
+        <div className="stat-value">{stats?.wonLeads || 0}</div>
         <div className="stat-subtext">Total accounts</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
@@ -313,17 +344,17 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
           <span className="stat-label">Conversion</span>
           <div className="stat-icon-box"><BarChart3 size={16} /></div>
         </div>
-        <div className="stat-value">0%</div>
+        <div className="stat-value">{stats?.conversionRate || 0}%</div>
         <div className="stat-subtext">Opp to account</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
       <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
         <div className="stat-header">
-          <span className="stat-label">CC:Sale</span>
+          <span className="stat-label">Value</span>
           <div className="stat-icon-box"><Phone size={16} /></div>
         </div>
-        <div className="stat-value">10721:1</div>
-        <div className="stat-subtext">Calls to sale</div>
+        <div className="stat-value">£{stats?.totalValue?.toLocaleString() || 0}</div>
+        <div className="stat-subtext">Total pipeline value</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
     </section>
@@ -334,14 +365,14 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
         <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
       </div>
       <div className="pipeline-stepper">
-        <PipelineStep num="21269" label="New" />
-        <PipelineStep num="83" label="Contacted" />
-        <PipelineStep num="2" label="Qualified" />
-        <PipelineStep num="87" label="Booked" />
-        <PipelineStep num="2" label="Approved" />
-        <PipelineStep num="0" label="Delivered" />
-        <PipelineStep num="0" label="Transacting" />
-        <PipelineStep num="0" label="Non-Trans." />
+        <PipelineStep num={stats?.pipeline?.New || 0} label="New" />
+        <PipelineStep num={stats?.pipeline?.Contacted || 0} label="Contacted" />
+        <PipelineStep num={stats?.pipeline?.Qualified || 0} label="Qualified" />
+        <PipelineStep num={stats?.pipeline?.Booked || 0} label="Booked" />
+        <PipelineStep num={stats?.pipeline?.Approved || 0} label="Approved" />
+        <PipelineStep num={stats?.pipeline?.Delivered || 0} label="Delivered" />
+        <PipelineStep num={stats?.pipeline?.Transacting || 0} label="Transacting" />
+        <PipelineStep num={stats?.pipeline?.NonTrans || 0} label="Non-Trans." />
       </div>
     </section>
 
@@ -352,11 +383,15 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
           <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => onNavigate('Opportunities')}>View All</div>
         </div>
         <div className="opportunity-list-clean">
-          <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" onClick={() => onLeadClick({ name: "Berkeley Heath Auto Centre", contact: "Paul", status: "New", phone: "01453 511533", email: "paul@berkeleyauto.co.uk", address: "GL13 9ET", bda: "Oleksiy Radchenko", bdm: "James King" })} />
-          <OpportunityItem name="Martin Richings Motor Repairs" contact="Martin" onClick={() => onLeadClick({ name: "Martin Richings Motor Repairs", contact: "Martin", status: "New", phone: "01454 311663", email: "martin@richings.co.uk", address: "BS37 6AA", bda: "Oleksiy Radchenko", bdm: "James King" })} />
-          <OpportunityItem name="Motortech" contact="Steve" onClick={() => onLeadClick({ name: "Motortech", contact: "Steve", status: "New", phone: "01454 311663", email: "steve@motortech.co.uk", address: "GL7 1YG", bda: "Oleksiy Radchenko", bdm: "James King" })} />
-          <OpportunityItem name="Circuit Motors Ltd" contact="" onClick={() => onLeadClick({ name: "Circuit Motors Ltd", contact: "N/A", status: "New", phone: "01249 782596", email: "info@circuitmotors.com", address: "SN14 7HB", bda: "Oleksiy Radchenko", bdm: "James King" })} />
-          <OpportunityItem name="Purley Road Garage" contact="" onClick={() => onLeadClick({ name: "Purley Road Garage", contact: "N/A", status: "New", phone: "01285 652365", email: "garage@purleyroad.co.uk", address: "GL7 1ER", bda: "Oleksiy Radchenko", bdm: "James King" })} />
+          {leads.slice(0, 5).map(lead => (
+            <OpportunityItem 
+              key={lead._id}
+              name={lead.business} 
+              contact={lead.contactName} 
+              onClick={() => onLeadClick(lead)} 
+            />
+          ))}
+          {leads.length === 0 && <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>No recent opportunities</p>}
         </div>
       </div>
 
@@ -366,29 +401,22 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
           <Activity size={16} color="#9ca3af" />
         </div>
         <div className="activity-list">
-          <ActivityItem user="Oleksiy Radchenko" text="owner not in, callbacks cheduled" time="May 11, 8:36 PM" />
-          <ActivityItem user="System" text="New lead created: Berkeley Heath Auto Centre" time="May 11, 8:36 PM" />
-          <ActivityItem user="Oleksiy Radchenko" text="call back arranged" time="May 11, 8:24 PM" />
-          <ActivityItem user="System" text="New lead created: Martin Richings Motor Repairs" time="May 11, 8:23 PM" />
-          <ActivityItem user="Vandan Popat" text="ring out, no answer" time="May 11, 8:22 PM" />
+          {activityList.map(act => (
+            <ActivityItem 
+              key={act._id} 
+              user={act.user} 
+              text={act.text} 
+              time={new Date(act.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 
+            />
+          ))}
+          {activityList.length === 0 && <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>No recent activity</p>}
         </div>
       </div>
     </div>
   </div>
 );
 
-const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode, onLeadClick }) => {
-  const opportunities = [
-    { id: 1, business: 'Berkeley Heath Auto Centre', name: 'Paul', postcode: 'GL13 9ET', phone: '01453 511533', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
-    { id: 2, business: 'Martin Richings Motor Repairs', name: 'Martin', postcode: 'BS37 6AA', phone: '01454 311663', provider: 'WorldPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '18/05/26' },
-    { id: 3, business: 'Motortech', name: 'Steve', postcode: 'GL7 1YG', phone: '01454 311663', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '12/05/26' },
-    { id: 4, business: 'Circuit Motors Ltd', name: 'SN14 7HB', postcode: '', phone: '01249 782596', provider: 'iZettle', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '27/05/26' },
-    { id: 5, business: 'Purley Road Garage', name: 'GL7 1ER', postcode: '', phone: '01285 652365', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '12/05/26' },
-    { id: 6, business: 'OPD Auto Services Ltd', name: 'GL6 7AS', postcode: '', phone: '01452 771009', provider: 'WorldPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '28/05/26' },
-    { id: 7, business: 'Holbrook Garage', name: 'Fam', postcode: 'GL6 7BX', phone: '01452 770272', provider: 'HandyPay', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '11/11/26' },
-    { id: 8, business: "Gloucester Centre for MG's", name: 'GL10 2LA', postcode: '', phone: '01453 825164', bda: 'Oleksiy Radchenko', bdm: 'James King', callback: '19/05/26' },
-  ];
-
+const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLeadClick }) => {
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -444,27 +472,18 @@ const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode, onLeadClick
               </tr>
             </thead>
             <tbody>
-              {opportunities.map(opp => (
+              {leads.map(opp => (
                 <TableRow 
-                  key={opp.id}
+                  key={opp._id}
                   business={opp.business} 
-                  contact={opp.name} 
+                  contact={opp.contactName} 
                   phone={opp.phone} 
                   postcode={opp.postcode || '—'} 
                   bda={opp.bda} 
                   bdm={opp.bdm} 
                   callback={opp.callback} 
                   provider={opp.provider || '—'} 
-                  onClick={() => onLeadClick({ 
-                    name: opp.business, 
-                    contact: opp.name, 
-                    status: "New", 
-                    phone: opp.phone, 
-                    email: `${opp.name.toLowerCase().replace(' ', '.')}@${opp.business.toLowerCase().replace(/[^a-z]/g, '')}.co.uk`, 
-                    address: opp.postcode || "N/A", 
-                    bda: opp.bda, 
-                    bdm: opp.bdm 
-                  })}
+                  onClick={() => onLeadClick(opp)}
                 />
               ))}
             </tbody>
@@ -472,31 +491,22 @@ const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode, onLeadClick
         </div>
       ) : (
         <div className="opportunities-grid-container">
-          {opportunities.map(opp => (
+          {leads.map(opp => (
             <div 
-              key={opp.id} 
+              key={opp._id} 
               className="opportunity-grid-card" 
-              onClick={() => onLeadClick({ 
-                name: opp.business, 
-                contact: opp.name, 
-                status: "New", 
-                phone: opp.phone, 
-                email: `${opp.name.toLowerCase().replace(' ', '.')}@${opp.business.toLowerCase().replace(/[^a-z]/g, '')}.co.uk`, 
-                address: opp.postcode || "N/A", 
-                bda: opp.bda, 
-                bdm: opp.bdm 
-              })}
+              onClick={() => onLeadClick(opp)}
               style={{ cursor: 'pointer' }}
             >
               <div className="grid-card-header">
                 <div className="grid-card-main">
                   <h3 className="grid-card-title">{opp.business}</h3>
                   <div className="grid-card-meta">
-                    <span>{opp.name}</span>
+                    <span>{opp.contactName}</span>
                     <span>{opp.postcode}</span>
                   </div>
                 </div>
-                <span className="status-badge-new">new</span>
+                <span className={`status-badge-${(opp.status || 'new').toLowerCase()}`}>{opp.status || 'new'}</span>
               </div>
               <div className="grid-card-content">
                 <div className="grid-info-row">
@@ -530,38 +540,22 @@ const OpportunitiesView = ({ onAdd, onImport, viewMode, setViewMode, onLeadClick
       )}
 
       <div className="pagination-bar">
-        <div className="pagination-info">Showing 1 to 8 of 21354 results</div>
-        <div className="pagination-controls">
-          <button className="page-nav-btn"><ChevronLeft size={16} /> Previous</button>
-          <div className="page-numbers">
-            <button className="page-num-btn active">1</button>
-            <button className="page-num-btn">2</button>
-            <button className="page-num-btn">3</button>
-            <span className="page-dots">...</span>
-            <button className="page-num-btn">2669</button>
-          </div>
-          <button className="page-nav-btn">Next <ChevronRight size={16} /></button>
-        </div>
+        <div className="pagination-info">Showing {leads.length} of {leads.length} results</div>
       </div>
     </div>
   );
 };
 
-const AccountsView = ({ onImport, viewMode, setViewMode }) => {
+const AccountsView = ({ leads, onImport, viewMode, setViewMode, onLeadClick }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState('All');
-
-  const accounts = [
-    { id: 1, business: 'Frankham Motor Services', contact: 'Drena', phone: '1249890809', postcode: 'SN15 4NX', status: 'Approved', volume: '20000', mid: '123456' },
-    { id: 2, business: 'Ian Paull Car Repairs', contact: 'Mo / Matt / Ian', phone: '01326 341123', postcode: '—', status: 'Approved', volume: '—', mid: '—' },
-  ];
 
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Accounts</h1>
-          <p>0 transacting, 2 approved, 0 delivered, 0 non-transacting</p>
+          <p>{leads.filter(l => l.status === 'Transacting').length} transacting, {leads.filter(l => l.status === 'Approved').length} approved, {leads.length} total</p>
         </div>
         <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
       </header>
@@ -594,9 +588,6 @@ const AccountsView = ({ onImport, viewMode, setViewMode }) => {
             {showUserDropdown && (
               <div className="custom-dropdown">
                 <div className="dropdown-item active"><Check size={16} /> All Users</div>
-                <div className="dropdown-item">Vandan Popat</div>
-                <div className="dropdown-item">Oleksiy Radchenko</div>
-                <div className="dropdown-item">Janey Chudasama</div>
               </div>
             )}
           </div>
@@ -624,16 +615,17 @@ const AccountsView = ({ onImport, viewMode, setViewMode }) => {
               </tr>
             </thead>
             <tbody>
-              {accounts.map(acc => (
+              {leads.map(acc => (
                 <AccountRow 
-                  key={acc.id}
+                  key={acc._id}
                   business={acc.business} 
-                  contact={acc.contact} 
+                  contact={acc.contactName} 
                   phone={acc.phone} 
                   postcode={acc.postcode} 
                   status={acc.status} 
                   volume={acc.volume} 
                   mid={acc.mid} 
+                  onClick={() => onLeadClick(acc)}
                 />
               ))}
             </tbody>
@@ -641,14 +633,14 @@ const AccountsView = ({ onImport, viewMode, setViewMode }) => {
         </div>
       ) : (
         <div className="accounts-grid-container">
-          {accounts.map(acc => (
-            <div key={acc.id} className="account-grid-card">
+          {leads.map(acc => (
+            <div key={acc._id} className="account-grid-card" onClick={() => onLeadClick(acc)} style={{ cursor: 'pointer' }}>
               <div className="account-grid-header">
                 <div className="account-card-main">
                   <h3 className="account-card-title">{acc.business}</h3>
-                  <div className="account-card-contact">{acc.contact}</div>
+                  <div className="account-card-contact">{acc.contactName}</div>
                 </div>
-                <span className={`status-badge ${acc.status.toLowerCase()}`}>{acc.status}</span>
+                <span className={`status-badge ${acc.status.toLowerCase().replace('-', '')}`}>{acc.status}</span>
               </div>
               <div className="account-card-body">
                 <div className="account-info-row">
@@ -678,14 +670,20 @@ const AccountsView = ({ onImport, viewMode, setViewMode }) => {
   );
 };
 
-const ContactView = () => {
+const ContactView = ({ leads }) => {
   const [activeTab, setActiveTab] = useState('All');
+
+  const filteredContacts = activeTab === 'All' 
+    ? leads 
+    : activeTab === 'Opportunities' 
+      ? leads.filter(l => !['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status))
+      : leads.filter(l => ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status));
 
   return (
     <div className="page-content">
       <header className="page-header">
         <h1>Contact</h1>
-        <p>20822 contacts across opportunities and accounts</p>
+        <p>{filteredContacts.length} contacts across {activeTab.toLowerCase()}</p>
       </header>
 
       <div className="filters-bar">
@@ -708,31 +706,40 @@ const ContactView = () => {
       </div>
 
       <div className="contact-list">
-        <ContactCard initial="P" name="Paul" business="Berkeley Heath Auto Centre" phone="01453 511533" type="Opportunity" />
-        <ContactCard initial="M" name="Martin" business="Martin Richings Motor Repairs" phone="01454 311663" type="Opportunity" />
-        <ContactCard initial="S" name="Steve" business="Motortech" phone="" type="Opportunity" />
-        <ContactCard initial="" name="" business="Circuit Motors Ltd" phone="01249 782596" type="Opportunity" />
-        <ContactCard initial="" name="" business="Purley Road Garage" phone="01285 652365" type="Opportunity" />
-        <ContactCard initial="" name="" business="OPD Auto Services Ltd" phone="01452 771009" type="Opportunity" />
-        <ContactCard initial="F" name="Fam" business="Holbrook Garage" phone="01452 770272" type="Opportunity" />
+        {filteredContacts.map(l => (
+          <ContactCard 
+            key={l._id}
+            initial={l.contactName ? l.contactName[0] : '?'} 
+            name={l.contactName} 
+            business={l.business} 
+            phone={l.phone} 
+            type={['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status) ? 'Account' : 'Opportunity'} 
+          />
+        ))}
+        {filteredContacts.length === 0 && <p style={{ color: '#9ca3af' }}>No contacts found.</p>}
       </div>
     </div>
   );
 };
 
-const CalendarView = () => {
+const CalendarView = ({ leads }) => {
   const [calendarMode, setCalendarMode] = useState('Month');
+  const callbacksToday = leads.filter(l => l.callback && l.callback.includes('today')); // Simplified check
 
   return (
     <div className="page-content">
       {/* Alert Banner */}
-      <div className="calendar-alert-banner">
-        <Bell size={18} />
-        <div className="alert-content">
-          <div className="alert-title">You have 1 callback today</div>
-          <div className="alert-item"><Phone size={14} /> 7a Coffee Shop</div>
+      {callbacksToday.length > 0 && (
+        <div className="calendar-alert-banner">
+          <Bell size={18} />
+          <div className="alert-content">
+            <div className="alert-title">You have {callbacksToday.length} callback{callbacksToday.length > 1 ? 's' : ''} today</div>
+            {callbacksToday.slice(0, 2).map(l => (
+              <div key={l._id} className="alert-item"><Phone size={14} /> {l.business}</div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -752,18 +759,22 @@ const CalendarView = () => {
         </div>
       </header>
 
-      {calendarMode === 'Month' && <CalendarMonthView />}
-      {calendarMode === 'Day' && <CalendarDayView />}
-      {calendarMode === 'List' && <CalendarListView />}
+      {calendarMode === 'Month' && <CalendarMonthView leads={leads} />}
+      {calendarMode === 'Day' && <CalendarDayView leads={leads} />}
+      {calendarMode === 'List' && <CalendarListView leads={leads} />}
     </div>
   );
 };
 
-const UsersView = ({ onImport, onAdd, onEdit, onResetPassword }) => {
+const UsersView = ({ users, onImport, onAdd, onEdit, onResetPassword }) => {
   const [roleFilter, setRoleFilter] = useState('All Roles');
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   const roles = ['All Roles', 'BDA', 'BDM', 'Admin'];
+
+  const filteredUsers = roleFilter === 'All Roles' 
+    ? users 
+    : users.filter(u => u.role.toUpperCase() === roleFilter.toUpperCase());
 
   return (
     <div className="page-content">
@@ -810,14 +821,19 @@ const UsersView = ({ onImport, onAdd, onEdit, onResetPassword }) => {
       </div>
 
       <div className="users-grid">
-        <UserCard initials="VP" name="Vandan Popat" handle="@vandan.p" email="vandan.p@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Vandan Popat")} />
-        <UserCard initials="OR" name="Oleksiy Radchenko" handle="@oleksiy.r" email="oleksiy.r@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Oleksiy Radchenko")} />
-        <UserCard initials="JC" name="Janey Chudasama" handle="@janey.c" email="janey.c@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Janey Chudasama")} />
-        <UserCard initials="JK" name="James King" handle="@jimmybigburgers" email="jimmybigburgers@gmail.com" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("James King")} />
-        <UserCard initials="AV" name="Aivi Verousi" handle="@aivi.v" email="aivi.v@mypaymentzen.co.uk" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Aivi Verousi")} />
-        <UserCard initials="AW" name="Aaron wake" handle="@aaron" email="aaron@paymetryx.com" role="BDM" onEdit={onEdit} onReset={() => onResetPassword("Aaron wake")} />
-        <UserCard initials="U" name="Umair" handle="@mr.umairnaseer" email="mr.umairnaseer@gmail.com" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("Umair")} />
-        <UserCard initials="JK" name="James King" handle="@James King" email="james.k@mypaymentzen.co.uk" phone="07568263874" role="ADMIN" onEdit={onEdit} onReset={() => onResetPassword("James King")} />
+        {filteredUsers.map(u => (
+          <UserCard 
+            key={u._id}
+            initials={u.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+            name={u.name}
+            handle={u.handle || `@${u.name.toLowerCase().replace(' ', '.')}`}
+            email={u.email}
+            role={u.role}
+            onEdit={() => onEdit(u)}
+            onReset={() => onResetPassword(u.name)}
+          />
+        ))}
+        {filteredUsers.length === 0 && <p style={{ color: '#9ca3af', padding: '2rem' }}>No users found for this role.</p>}
       </div>
     </div>
   );
@@ -846,100 +862,104 @@ const UserCard = ({ initials, name, handle, email, phone, role, onEdit, onReset 
   </div>
 );
 
-const CalendarMonthView = () => (
-  <div className="calendar-container">
-    <div className="calendar-nav-header">
-      <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
-      <h2>May 2026</h2>
-      <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+const CalendarMonthView = ({ leads }) => {
+  const leadsWithCallbacks = leads.filter(l => l.callback);
+  
+  return (
+    <div className="calendar-container">
+      <div className="calendar-nav-header">
+        <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
+        <h2>May 2026</h2>
+        <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+      </div>
+      <div className="calendar-grid">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+          <div key={day} className="cal-weekday">{day}</div>
+        ))}
+        {[...Array(31)].map((_, i) => {
+          const dayLeads = leadsWithCallbacks.filter(l => l.callback.includes(`${i + 1}/05`) || (i === 11 && l.callback.toLowerCase().includes('today')));
+          return (
+            <div key={i} className={`cal-day-cell ${i === 11 ? 'today' : ''}`}>
+              <span className="day-num">{i + 1}</span>
+              {dayLeads.map(l => (
+                <CalendarPill key={l._id} color="mint" label={l.business} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
-    <div className="calendar-grid">
-      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-        <div key={day} className="cal-weekday">{day}</div>
-      ))}
-      {[...Array(31)].map((_, i) => (
-        <div key={i} className={`cal-day-cell ${i === 11 ? 'today' : ''}`}>
-          <span className="day-num">{i + 1}</span>
-          {i === 0 && <CalendarPill color="mint" label="Nile Valley Cafe" />}
-          {i === 1 && (
-            <>
-              <CalendarPill color="mint" label="Hush Hair & Beauty" />
-              <CalendarPill color="mint" label="PLC Media" />
-              <div className="more-pills">+1 more</div>
-            </>
-          )}
-          {i === 3 && (
-            <>
-              <CalendarPill color="mint" label="Sarah's Cake Shop" />
-              <CalendarPill color="mint" label="Launceston Tyre Co" />
-            </>
-          )}
-          {i === 4 && (
-            <>
-              <CalendarPill color="mint" label="Belgrave road garage" />
-              <CalendarPill color="mint" label="Brunel Tyres & Autocare" />
-              <div className="more-pills">+3 more</div>
-            </>
-          )}
-          {i === 11 && <CalendarPill color="mint" label="7a Coffee Shop" />}
-        </div>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
-const CalendarDayView = () => (
-  <div className="calendar-container">
-    <div className="calendar-nav-header">
-      <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
-      <h2>Tuesday, May 12, 2026</h2>
-      <button className="cal-nav-btn"><ChevronRight size={20} /></button>
-    </div>
-    <div className="day-schedule-list">
-      <div className="day-event-card">
-        <div className="event-accent"></div>
-        <div className="event-info">
-          <div className="event-header">
-            <Phone size={18} color="#10b981" />
-            <span className="event-title">7a Coffee Shop</span>
-            <span className="status-badge approved" style={{ background: '#dcfce7', color: '#059669' }}>Callback</span>
-            <span className="new-badge">new</span>
+const CalendarDayView = ({ leads }) => {
+  const dayLeads = leads.filter(l => l.callback && (l.callback.includes('12/05') || l.callback.toLowerCase().includes('today')));
+  
+  return (
+    <div className="calendar-container">
+      <div className="calendar-nav-header">
+        <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
+        <h2>Tuesday, May 12, 2026</h2>
+        <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+      </div>
+      <div className="day-schedule-list">
+        {dayLeads.map(l => (
+          <div key={l._id} className="day-event-card">
+            <div className="event-accent"></div>
+            <div className="event-info">
+              <div className="event-header">
+                <Phone size={18} color="#10b981" />
+                <span className="event-title">{l.business}</span>
+                <span className="status-badge approved" style={{ background: '#dcfce7', color: '#059669' }}>Callback</span>
+              </div>
+              <div className="event-meta">
+                <div className="meta-item"><Clock size={14} /> {l.callback}</div>
+                <div className="meta-item"><Phone size={14} /> {l.phone}</div>
+              </div>
+            </div>
           </div>
-          <div className="event-meta">
-            <div className="meta-item"><Clock size={14} /> 9:00 AM</div>
-            <div className="meta-item"><Phone size={14} /> 441285712918</div>
-          </div>
+        ))}
+        {dayLeads.length === 0 && <p style={{ color: '#9ca3af', padding: '1rem' }}>No callbacks today.</p>}
+      </div>
+    </div>
+  );
+};
+
+const CalendarListView = ({ leads }) => {
+  const leadsWithCallbacks = leads.filter(l => l.callback);
+
+  return (
+    <div className="calendar-list-workspace">
+      <div className="filters-bar">
+        <div className="filter-search">
+          <Search size={16} color="#94a3b8" />
+          <input type="text" placeholder="Search entries..." />
         </div>
-        <button className="btn-secondary"><Eye size={16} /> View</button>
+        <div className="dropdown-container">
+          <button className="filter-dropdown">
+            <Filter size={16} />
+            <span>All Status</span>
+            <ChevronDown size={14} />
+          </button>
+        </div>
       </div>
-    </div>
-  </div>
-);
 
-const CalendarListView = () => (
-  <div className="calendar-list-workspace">
-    <div className="filters-bar">
-      <div className="filter-search">
-        <Search size={16} color="#94a3b8" />
-        <input type="text" placeholder="Search entries..." />
-      </div>
-      <div className="dropdown-container">
-        <button className="filter-dropdown">
-          <Filter size={16} />
-          <span>All Status</span>
-          <ChevronDown size={14} />
-        </button>
+      <div className="appointment-list">
+        {leadsWithCallbacks.map(l => (
+          <AppointmentCard 
+            key={l._id}
+            name={l.business} 
+            type="Callback" 
+            contact={l.contactName || 'No contact'} 
+            bdm={l.bdm} 
+            time={l.callback} 
+          />
+        ))}
+        {leadsWithCallbacks.length === 0 && <p style={{ color: '#9ca3af' }}>No scheduled callbacks or appointments.</p>}
       </div>
     </div>
-
-    <div className="appointment-list">
-      <AppointmentCard name="Mister Ernest" type="Appointment" contact="Sandra" bdm="James King" time="May 7, 9:00 PM" />
-      <AppointmentCard name="Ashley House Printing Company Ltd" type="Appointment" contact="No contact" bdm="James King" time="Apr 16, 4:35 PM" />
-      <AppointmentCard name="Sky Tyres Bristol" type="Appointment" contact="Daud" bdm="James King" time="Apr 10, 6:00 PM" />
-      <AppointmentCard name="Mike Knight Tyres Ltd" type="Appointment" contact="Adam/Mark" bdm="James King" time="Apr 10, 4:00 PM" />
-    </div>
-  </div>
-);
+  );
+};
 
 const CalendarPill = ({ color, label }) => (
   <div className={`cal-pill ${color}`}>{label}</div>
@@ -1003,111 +1023,146 @@ const AccountRow = ({ business, contact, phone, postcode, status, volume, mid })
   </tr>
 );
 
-const AddOpportunityModal = ({ onClose }) => (
-  <div className="modal-overlay">
-    <div className="modal-card">
-      <div className="modal-header">
-        <h2>Add New Opportunity</h2>
-        <button className="modal-close" onClick={onClose}><X size={20} /></button>
-      </div>
-      <div className="modal-body-scrollable">
-        <div className="form-grid">
-          <div className="form-field">
-            <label>Business Name *</label>
-            <input type="text" />
-          </div>
-          <div className="form-field">
-            <label>Contact Name</label>
-            <input type="text" />
-          </div>
-          <div className="form-field">
-            <label>Email</label>
-            <input type="email" />
-          </div>
-          <div className="form-field">
-            <label>Phone</label>
-            <input type="text" />
-          </div>
-          <div className="form-field full-width">
-            <label>Full Address</label>
-            <input type="text" />
-          </div>
-          <div className="form-field">
-            <label>Town / City</label>
-            <input type="text" />
-          </div>
-          <div className="form-field">
-            <label>Postcode</label>
-            <input type="text" />
-          </div>
-          <div className="form-field">
-            <label>Business Type</label>
-            <select className="form-select">
-              <option>Select business type</option>
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Est. Monthly Volume</label>
-            <input type="text" placeholder="e.g. $50,000" />
-          </div>
-          <div className="form-field">
-            <label>Current Provider</label>
-            <input type="text" placeholder="e.g. WorldPay" />
-          </div>
-          <div className="form-field">
-            <label>Rates</label>
-            <input type="text" placeholder="e.g. 1.5%" />
-          </div>
-          <div className="form-field full-width">
-            <label>Time Left in Contract</label>
-            <input type="text" placeholder="e.g. 6 months" />
-          </div>
-          <div className="form-field checkbox-field">
-            <input type="checkbox" id="epos" />
-            <label htmlFor="epos">EPOS / Integrated</label>
-          </div>
-          <div className="form-field checkbox-field">
-            <input type="checkbox" id="email-sent" />
-            <label htmlFor="email-sent">Email Sent</label>
-          </div>
-          <div className="form-field">
-            <label>Assign BDA</label>
-            <select className="form-select">
-              <option>Unassigned</option>
-              <option>Oleksiy Radchenko</option>
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Assign BDM</label>
-            <select className="form-select">
-              <option>Unassigned</option>
-              <option>James King</option>
-            </select>
-          </div>
-          <div className="form-field full-width">
-            <label>Notes</label>
-            <textarea rows="4" placeholder="Add internal notes..."></textarea>
+const AddOpportunityModal = ({ onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    business: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    address: '',
+    postcode: '',
+    volume: '',
+    provider: '',
+    bda: 'Unassigned',
+    bdm: 'Unassigned',
+    notes: ''
+  });
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        // Log activity
+        await fetch('/api/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: 'System', // or current user if implemented
+            text: `New lead created: ${formData.business}`
+          })
+        });
+        onSuccess();
+        onClose();
+      }
+    } catch (e) {
+      console.error('Error creating lead:', e);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card">
+        <div className="modal-header">
+          <h2>Add New Opportunity</h2>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="modal-body-scrollable">
+          <div className="form-grid">
+            <div className="form-field">
+              <label>Business Name *</label>
+              <input type="text" value={formData.business} onChange={e => setFormData({...formData, business: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Contact Name</label>
+              <input type="text" value={formData.contactName} onChange={e => setFormData({...formData, contactName: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Email</label>
+              <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Phone</label>
+              <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+            </div>
+            <div className="form-field full-width">
+              <label>Full Address</label>
+              <input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Postcode</label>
+              <input type="text" value={formData.postcode} onChange={e => setFormData({...formData, postcode: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Est. Monthly Volume</label>
+              <input type="text" placeholder="e.g. $50,000" value={formData.volume} onChange={e => setFormData({...formData, volume: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Current Provider</label>
+              <input type="text" placeholder="e.g. WorldPay" value={formData.provider} onChange={e => setFormData({...formData, provider: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Assign BDA</label>
+              <select className="form-select" value={formData.bda} onChange={e => setFormData({...formData, bda: e.target.value})}>
+                <option>Unassigned</option>
+                <option>Oleksiy Radchenko</option>
+                <option>Vandan Popat</option>
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Assign BDM</label>
+              <select className="form-select" value={formData.bdm} onChange={e => setFormData({...formData, bdm: e.target.value})}>
+                <option>Unassigned</option>
+                <option>James King</option>
+              </select>
+            </div>
+            <div className="form-field full-width">
+              <label>Notes</label>
+              <textarea rows="4" placeholder="Add internal notes..." value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="modal-footer">
-        <button className="btn-secondary" onClick={onClose}>Cancel</button>
-        <button className="btn-primary" onClick={onClose}>Create Opportunity</button>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={handleSave}>Create Opportunity</button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const SearchPopup = ({ onClose }) => {
+const SearchPopup = ({ leads, users, onLeadClick, onClose }) => {
   const [query, setQuery] = useState('');
 
-  const results = query.length >= 2 
-    ? SEARCH_DATA.filter(item => 
-        item.title.toLowerCase().includes(query.toLowerCase()) || 
-        item.subtitle.toLowerCase().includes(query.toLowerCase()) ||
-        item.type.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
+  const leadsResults = leads.filter(l => 
+    l.business.toLowerCase().includes(query.toLowerCase()) ||
+    (l.contactName && l.contactName.toLowerCase().includes(query.toLowerCase())) ||
+    (l.postcode && l.postcode.toLowerCase().includes(query.toLowerCase()))
+  ).map(l => ({
+    id: l._id,
+    type: ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status) ? 'Account' : 'Opportunity',
+    title: l.business,
+    subtitle: `${l.contactName || ''} • ${l.postcode || ''}`,
+    icon: ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status) ? 'Building2' : 'Target',
+    original: l
+  }));
+
+  const usersResults = users.filter(u => 
+    u.name.toLowerCase().includes(query.toLowerCase()) ||
+    u.email.toLowerCase().includes(query.toLowerCase())
+  ).map(u => ({
+    id: u._id,
+    type: 'User',
+    title: u.name,
+    subtitle: u.role,
+    icon: 'UserCircle',
+    original: u
+  }));
+
+  const results = query.length >= 2 ? [...leadsResults, ...usersResults] : [];
 
   return (
     <div className="search-popup-overlay" onClick={onClose}>
@@ -1133,12 +1188,14 @@ const SearchPopup = ({ onClose }) => {
           ) : results.length > 0 ? (
             <div className="search-results-list">
               {results.map(result => (
-                <div key={result.id} className="search-result-item" onClick={onClose}>
+                <div key={result.id} className="search-result-item" onClick={() => {
+                  if (result.type !== 'User') onLeadClick(result.original);
+                  else onClose();
+                }}>
                   <div className="result-icon">
                     {result.icon === 'Target' && <Target size={18} />}
                     {result.icon === 'Building2' && <Building2 size={18} />}
                     {result.icon === 'UserCircle' && <UserCircle size={18} />}
-                    {result.icon === 'Calendar' && <Calendar size={18} />}
                   </div>
                   <div className="result-info">
                     <div className="result-title">{result.title}</div>
@@ -1164,61 +1221,112 @@ const SearchPopup = ({ onClose }) => {
   );
 };
 
-const UserModal = ({ mode, user, onClose }) => (
-  <div className="modal-overlay">
-    <div className="modal-card" style={{ maxWidth: '500px' }}>
-      <div className="modal-header">
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>
-          {mode === 'add' ? 'Add Team Member' : 'Edit Team Member'}
-        </h2>
-        <button className="modal-close" onClick={onClose}><X size={18} /></button>
-      </div>
-      <div className="modal-body">
-        <div className="form-grid">
-          <div className="form-field">
-            <label>Full Name *</label>
-            <input type="text" defaultValue={user?.name || ''} placeholder="e.g. John Doe" />
-          </div>
-          <div className="form-field">
-            <label>Username *</label>
-            <input type="text" defaultValue={user?.handle || 'mr.umairnaseer@gmail.com'} />
-          </div>
-          {mode === 'add' && (
+const UserModal = ({ mode, user, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    password: '',
+    role: user?.role || 'BDA',
+    handle: user?.handle || '',
+    phone: user?.phone || ''
+  });
+
+  const handleSave = async () => {
+    try {
+      const url = mode === 'add' ? '/api/users' : `/api/users/${user._id}`;
+      const method = mode === 'add' ? 'POST' : 'PATCH';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        onSuccess();
+        onClose();
+      }
+    } catch (e) {
+      console.error('Error saving user:', e);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card" style={{ maxWidth: '500px' }}>
+        <div className="modal-header">
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>
+            {mode === 'add' ? 'Add Team Member' : 'Edit Team Member'}
+          </h2>
+          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="form-grid">
             <div className="form-field">
-              <label>Password *</label>
-              <input type="password" defaultValue=".........." />
+              <label>Full Name *</label>
+              <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" />
             </div>
-          )}
-          <div className="form-field">
-            <label>Role *</label>
-            <select className="form-select" defaultValue={user?.role || 'BDA'}>
-              <option>BDA</option>
-              <option>ADMIN</option>
-              <option>BDM</option>
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Email</label>
-            <input type="email" defaultValue={user?.email || ''} />
-          </div>
-          <div className="form-field">
-            <label>Phone</label>
-            <input type="text" defaultValue={user?.phone || ''} />
+            <div className="form-field">
+              <label>Username / Handle</label>
+              <input type="text" value={formData.handle} onChange={e => setFormData({...formData, handle: e.target.value})} placeholder="@username" />
+            </div>
+            {mode === 'add' && (
+              <div className="form-field">
+                <label>Password *</label>
+                <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              </div>
+            )}
+            <div className="form-field">
+              <label>Role *</label>
+              <select className="form-select" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+                <option value="BDA">BDA</option>
+                <option value="Admin">Admin</option>
+                <option value="BDM">BDM</option>
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Email *</label>
+              <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Phone</label>
+              <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+            </div>
           </div>
         </div>
-      </div>
-      <div className="modal-footer" style={{ borderTop: 'none', padding: '0 1.5rem 1.5rem' }}>
-        <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '44px' }} onClick={onClose}>
-          {mode === 'add' ? 'Create User' : 'Save Changes'}
-        </button>
+        <div className="modal-footer" style={{ borderTop: 'none', padding: '0 1.5rem 1.5rem' }}>
+          <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: '44px' }} onClick={handleSave}>
+            {mode === 'add' ? 'Create User' : 'Save Changes'}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ResetPasswordModal = ({ user, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
   
+  const handleReset = async () => {
+    if (newPassword.length < 6) return alert('Password must be at least 6 characters');
+    setResetting(true);
+    try {
+      // Find user by name and update password (simplified for now)
+      const res = await fetch('/api/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: user, password: newPassword })
+      });
+      if (res.ok) {
+        onClose();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-card" style={{ maxWidth: '440px' }}>
@@ -1238,6 +1346,8 @@ const ResetPasswordModal = ({ user, onClose }) => {
                 type={showPassword ? 'text' : 'password'} 
                 placeholder="Min. 6 characters" 
                 style={{ paddingRight: '4rem' }}
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
               />
               <button 
                 className="show-password-btn" 
@@ -1255,20 +1365,92 @@ const ResetPasswordModal = ({ user, onClose }) => {
         </div>
         <div className="modal-footer" style={{ borderTop: 'none', gap: '1rem', padding: '0 1.5rem 1.5rem' }}>
           <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
-          <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', background: '#60a5fa' }} onClick={onClose}>Reset Password</button>
+          <button 
+            className="btn-primary" 
+            style={{ flex: 1, justifyContent: 'center', background: '#60a5fa' }} 
+            onClick={handleReset}
+            disabled={resetting}
+          >
+            {resetting ? 'Resetting...' : 'Reset Password'}
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-const ImportLeadsModal = ({ onClose, type }) => {
+const ImportLeadsModal = ({ onClose, type, onSuccess }) => {
+  const [file, setFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+
   const templates = {
     leads: { name: 'Opportunities Template', file: '/leads_template.csv' },
     accounts: { name: 'Accounts Template', file: '/accounts_template.csv' },
     users: { name: 'Users Template', file: '/users_template.csv' }
   };
   const currentTemplate = templates[type] || templates.leads;
+
+  const handleImport = async () => {
+    if (!file) return;
+    setImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      const data = lines.slice(1).filter(l => l.trim()).map(line => {
+        const values = line.split(',');
+        const obj = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i] ? values[i].trim() : '';
+        });
+        return obj;
+      });
+
+      try {
+        const endpoint = type === 'users' ? '/api/users' : '/api/leads';
+        for (const item of data) {
+          const payload = type === 'users' ? {
+            name: item.Name,
+            email: item.Email,
+            role: item.Role || 'BDA',
+            handle: item.Handle,
+            password: 'password123' // Default password for imported users
+          } : {
+            business: item.Business,
+            contactName: item.Contact,
+            phone: item.Phone,
+            email: item.Email,
+            postcode: item.Postcode,
+            status: type === 'accounts' ? 'Approved' : 'New'
+          };
+
+          await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+        
+        await fetch('/api/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: 'System',
+            text: `Imported ${data.length} records into ${type}`
+          })
+        });
+
+        onSuccess();
+        onClose();
+      } catch (err) {
+        console.error('Import failed:', err);
+      } finally {
+        setImporting(false);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="modal-overlay">
@@ -1278,10 +1460,16 @@ const ImportLeadsModal = ({ onClose, type }) => {
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="modal-body">
-          <div className="import-dropzone">
-            <Upload size={32} color="#2563eb" />
-            <h3>Click or drag CSV file here</h3>
-            <p>Support for .csv, .xls, .xlsx</p>
+          <div className="import-dropzone" style={{ position: 'relative' }}>
+            <input 
+              type="file" 
+              accept=".csv" 
+              onChange={(e) => setFile(e.target.files[0])} 
+              style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+            />
+            <Upload size={32} color={file ? "#10b981" : "#2563eb"} />
+            <h3>{file ? file.name : "Click or drag CSV file here"}</h3>
+            <p>{file ? "File ready to import" : "Support for .csv"}</p>
           </div>
           <div className="template-box">
             <div className="template-info">
@@ -1298,7 +1486,13 @@ const ImportLeadsModal = ({ onClose, type }) => {
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={onClose}>Start Import</button>
+          <button 
+            className="btn-primary" 
+            onClick={handleImport} 
+            disabled={!file || importing}
+          >
+            {importing ? "Importing..." : "Start Import"}
+          </button>
         </div>
       </div>
     </div>
@@ -1346,8 +1540,115 @@ const OpportunityItem = ({ name, contact, onClick }) => (
   </div>
 );
 
-const LeadDetailsView = ({ lead, onBack }) => {
+const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
+  const [note, setNote] = useState('');
+  const [updating, setUpdating] = useState(false);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    business: lead?.business || '',
+    contactName: lead?.contactName || '',
+    phone: lead?.phone || '',
+    email: lead?.email || '',
+    address: lead?.address || '',
+    provider: lead?.provider || ''
+  });
+
   if (!lead) return null;
+
+  const handleUpdateStatus = async (newStatus) => {
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/leads/${lead._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        await fetch('/api/activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: 'Umair',
+            text: `Updated status for ${lead.business} to ${newStatus}`
+          })
+        });
+        onSuccess();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${lead.business}?`)) return;
+    try {
+      const res = await fetch(`/api/leads/${lead._id}`, { method: 'DELETE' });
+      if (res.ok) {
+        onSuccess();
+        onBack();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveContact = async () => {
+    try {
+      const res = await fetch(`/api/leads/${lead._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm)
+      });
+      if (res.ok) {
+        setIsEditingContact(false);
+        onSuccess();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!note.trim()) return;
+    try {
+      const res = await fetch('/api/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: 'Umair',
+          text: `Note on ${lead.business}: ${note}`
+        })
+      });
+      if (res.ok) {
+        setNote('');
+        onSuccess();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleUpdateCallback = async () => {
+    const newDate = window.prompt("Enter callback date (e.g., 20/05/2026 10:00 AM)", lead.callback || "");
+    if (!newDate) return;
+    try {
+      const res = await fetch(`/api/leads/${lead._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback: newDate })
+      });
+      if (res.ok) {
+        onSuccess();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const statuses = ['New', 'Contacted', 'Qualified', 'Booked', 'Approved', 'Delivered', 'Transacting', 'Non-Trans'];
+  const currentIndex = statuses.indexOf(lead.status || 'New');
 
   return (
     <div className="page-content">
@@ -1357,57 +1658,81 @@ const LeadDetailsView = ({ lead, onBack }) => {
             <ChevronLeft size={24} color="#111827" />
           </button>
           <div className="lead-title-group">
-            <h2>{lead.name}</h2>
-            <p>{lead.contact}</p>
+            <h2>{lead.business}</h2>
+            <p>{lead.contactName} • {lead.postcode}</p>
           </div>
         </div>
         <div className="lead-header-right">
-          <span className="status-badge-new" style={{ padding: '6px 16px', borderRadius: '8px' }}>new</span>
-          <button className="trash-btn"><Trash2 size={20} /></button>
+          <span className={`status-badge-${(lead.status || 'new').toLowerCase().replace('-', '')}`} style={{ padding: '6px 16px', borderRadius: '8px' }}>
+            {lead.status || 'New'}
+          </span>
+          <button className="trash-btn" onClick={handleDelete}><Trash2 size={20} /></button>
         </div>
       </header>
 
       <div className="lead-stepper">
         <div className="step-line"></div>
-        <div className="step-line-active"></div>
-        <div className="step-item active">
-          <span className="step-label">New</span>
-        </div>
-        <div className="step-item">
-          <span className="step-label">Contacted</span>
-        </div>
-        <div className="step-item">
-          <span className="step-label">Qualified</span>
-        </div>
-        <div className="step-item">
-          <span className="step-label">Converted</span>
-        </div>
+        <div className="step-line-active" style={{ width: `${(currentIndex / (statuses.length - 1)) * 100}%` }}></div>
+        {statuses.slice(0, 5).map((s, i) => (
+          <div 
+            key={s} 
+            className={`step-item ${i <= currentIndex ? 'active' : ''}`}
+            onClick={() => handleUpdateStatus(s)}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="step-label">{s}</span>
+          </div>
+        ))}
       </div>
 
       <div className="lead-grid-cols">
         <div className="details-card">
           <div className="card-title-row">
             <h3>Contact Details</h3>
-            <Edit3 size={18} color="#6b7280" style={{ cursor: 'pointer' }} />
+            {isEditingContact ? (
+              <button className="btn-save-mini" onClick={handleSaveContact}>Save</button>
+            ) : (
+              <Edit3 size={18} color="#6b7280" style={{ cursor: 'pointer' }} onClick={() => setIsEditingContact(true)} />
+            )}
           </div>
           <div className="contact-info-list">
             <div className="contact-info-item">
               <Phone size={18} />
-              <span>{lead.phone}</span>
+              {isEditingContact ? (
+                <input type="text" value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
+              ) : (
+                <span>{lead.phone || 'No phone'}</span>
+              )}
+            </div>
+            <div className="contact-info-item">
+              <Mail size={18} />
+              {isEditingContact ? (
+                <input type="email" value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
+              ) : (
+                <span>{lead.email || 'No email'}</span>
+              )}
             </div>
             <div className="contact-info-item">
               <Building size={18} />
-              <span>A38, Berkeley Heath, Berkeley, GL13 9ET, Berkeley, GL13 9ET</span>
+              {isEditingContact ? (
+                <input type="text" value={contactForm.address} onChange={e => setContactForm({...contactForm, address: e.target.value})} />
+              ) : (
+                <span>{lead.address || lead.postcode || 'No address'}</span>
+              )}
             </div>
           </div>
-          <div className="field-group">
-            <div className="field-label">Business Type</div>
-            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
-              <span>Automotive</span>
-              <ChevronDown size={14} />
-            </div>
+          <div className="field-group" style={{ marginTop: '1.5rem' }}>
+            <div className="field-label">Current Provider</div>
+            {isEditingContact ? (
+              <input type="text" value={contactForm.provider} onChange={e => setContactForm({...contactForm, provider: e.target.value})} />
+            ) : (
+              <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
+                <span>{lead.provider || 'None'}</span>
+                <ChevronDown size={14} />
+              </div>
+            )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
             <div className="contact-info-item" style={{ fontSize: '0.875rem' }}>
               <UserCircle size={18} />
               <span>BDA: {lead.bda}</span>
@@ -1425,10 +1750,14 @@ const LeadDetailsView = ({ lead, onBack }) => {
           </div>
           <div className="field-group">
             <div className="field-label">Status</div>
-            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
-              <span>New</span>
-              <ChevronDown size={14} />
-            </div>
+            <select 
+              className="form-select" 
+              value={lead.status} 
+              onChange={(e) => handleUpdateStatus(e.target.value)}
+              disabled={updating}
+            >
+              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
           </div>
           <div className="field-group">
             <div className="field-label">Assigned BDA</div>
@@ -1444,15 +1773,17 @@ const LeadDetailsView = ({ lead, onBack }) => {
               <ChevronDown size={14} />
             </div>
           </div>
-          <button className="action-btn-white">
+          <button className="action-btn-white" onClick={handleUpdateCallback}>
             <Calendar size={18} /> Update Callback
           </button>
           <div className="callback-info-box">
-            <Calendar size={16} /> Callback: 18/05/2026 9:30 AM
+            <Calendar size={16} /> Callback: {lead.callback || 'Not scheduled'}
           </div>
-          <button className="btn-convert">
-            <PlayCircle size={20} /> Convert to Lead
-          </button>
+          {currentIndex < 4 && (
+            <button className="btn-convert" onClick={() => handleUpdateStatus('Approved')}>
+              <PlayCircle size={20} /> Convert to Account
+            </button>
+          )}
         </div>
       </div>
 
@@ -1461,8 +1792,13 @@ const LeadDetailsView = ({ lead, onBack }) => {
           <h3>Activity History</h3>
         </div>
         <div className="note-input-container">
-          <textarea className="note-textarea" placeholder="Add a note..."></textarea>
-          <button className="note-send-btn">
+          <textarea 
+            className="note-textarea" 
+            placeholder="Add a note..." 
+            value={note}
+            onChange={e => setNote(e.target.value)}
+          ></textarea>
+          <button className="note-send-btn" onClick={handleAddNote}>
             <MessageSquare size={18} />
           </button>
         </div>
@@ -1470,15 +1806,8 @@ const LeadDetailsView = ({ lead, onBack }) => {
           <div className="history-item">
             <div className="history-dot"></div>
             <div className="history-content">
-              <div className="history-text">Oleksiy Radchenko: owner not in, callbacks cheduled</div>
-              <div className="history-time">May 11, 8:36 PM</div>
-            </div>
-          </div>
-          <div className="history-item">
-            <div className="history-dot"></div>
-            <div className="history-content">
-              <div className="history-text">New lead created: Berkeley Heath Auto Centre</div>
-              <div className="history-time">May 11, 8:36 PM</div>
+              <div className="history-text">Lead status is currently: {lead.status || 'New'}</div>
+              <div className="history-time">{new Date(lead.updatedAt || Date.now()).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -1497,15 +1826,7 @@ const ActivityItem = ({ user, text, time }) => (
   </div>
 );
 
-const NotificationsPopup = ({ onClose, onNavigate }) => {
-  const notifications = [
-    { id: 1, user: 'Oleksiy Radchenko', text: 'owner not in, callbacks scheduled', time: '12 mins ago', unread: true },
-    { id: 2, user: 'System', text: 'New lead created: Berkeley Heath Auto Centre', time: '45 mins ago', unread: true },
-    { id: 3, user: 'Oleksiy Radchenko', text: 'call back arranged', time: '2 hours ago', unread: false },
-    { id: 4, user: 'System', text: 'New lead created: Martin Richings Motor Repairs', time: '3 hours ago', unread: false },
-    { id: 5, user: 'Vandan Popat', text: 'ring out, no answer', time: '5 hours ago', unread: false },
-  ];
-
+const NotificationsPopup = ({ activity, onClose, onNavigate }) => {
   return (
     <div className="notifications-popup" onClick={e => e.stopPropagation()}>
       <div className="notifications-header">
@@ -1513,20 +1834,20 @@ const NotificationsPopup = ({ onClose, onNavigate }) => {
         <button className="mark-read-btn">Mark all as read</button>
       </div>
       <div className="notifications-list">
-        {notifications.map(n => (
-          <div key={n.id} className={`notification-item ${n.unread ? 'unread' : ''}`}>
+        {activity.slice(0, 5).map(n => (
+          <div key={n._id} className="notification-item">
             <div className="notification-avatar">
-              {n.user === 'System' ? <Activity size={14} /> : n.user[0]}
+              {n.user === 'System' ? <Activity size={14} /> : (n.user ? n.user[0] : '?')}
             </div>
             <div className="notification-content">
               <div className="notification-text">
                 <span className="user-name">{n.user}</span> {n.text}
               </div>
-              <div className="notification-time">{n.time}</div>
+              <div className="notification-time">{new Date(n.time).toLocaleTimeString()}</div>
             </div>
-            {n.unread && <div className="unread-dot"></div>}
           </div>
         ))}
+        {activity.length === 0 && <p style={{ padding: '1rem', color: '#9ca3af' }}>No recent activity.</p>}
       </div>
       <div className="notifications-footer" onClick={() => {
         onNavigate();
@@ -1538,17 +1859,7 @@ const NotificationsPopup = ({ onClose, onNavigate }) => {
   );
 };
 
-const NotificationsView = () => {
-  const notifications = [
-    { id: 1, user: 'Oleksiy Radchenko', text: 'owner not in, callbacks scheduled', time: 'May 11, 8:36 PM', unread: true, type: 'Callback' },
-    { id: 2, user: 'System', text: 'New lead created: Berkeley Heath Auto Centre', time: 'May 11, 8:36 PM', unread: true, type: 'Lead' },
-    { id: 3, user: 'Oleksiy Radchenko', text: 'call back arranged', time: 'May 11, 8:24 PM', unread: false, type: 'Update' },
-    { id: 4, user: 'System', text: 'New lead created: Martin Richings Motor Repairs', time: 'May 11, 8:23 PM', unread: false, type: 'Lead' },
-    { id: 5, user: 'Vandan Popat', text: 'ring out, no answer', time: 'May 11, 8:22 PM', unread: false, type: 'Update' },
-    { id: 6, user: 'James King', text: 'Meeting scheduled with Frankham Motor Services', time: 'May 11, 4:15 PM', unread: false, type: 'Meeting' },
-    { id: 7, user: 'System', text: 'Monthly stats report generated', time: 'May 11, 10:00 AM', unread: false, type: 'Report' },
-  ];
-
+const NotificationsView = ({ activity }) => {
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1560,19 +1871,19 @@ const NotificationsView = () => {
       </header>
 
       <div className="notifications-page-list">
-        {notifications.map(n => (
-          <div key={n.id} className={`notification-page-item ${n.unread ? 'unread' : ''}`}>
+        {activity.map(n => (
+          <div key={n._id} className="notification-page-item">
             <div className="notif-left">
               <div className="notif-avatar-large">
-                {n.user === 'System' ? <Activity size={20} /> : n.user[0]}
+                {n.user === 'System' ? <Activity size={20} /> : (n.user ? n.user[0] : '?')}
               </div>
               <div className="notif-info">
                 <div className="notif-header">
                   <span className="notif-user">{n.user}</span>
-                  <span className="notif-type-tag">{n.type}</span>
+                  <span className="notif-type-tag">Activity</span>
                 </div>
                 <div className="notif-text">{n.text}</div>
-                <div className="notif-time">{n.time}</div>
+                <div className="notif-time">{new Date(n.time).toLocaleString()}</div>
               </div>
             </div>
             <div className="notif-actions">
@@ -1580,6 +1891,7 @@ const NotificationsView = () => {
             </div>
           </div>
         ))}
+        {activity.length === 0 && <p style={{ color: '#9ca3af', padding: '2rem' }}>No notifications found.</p>}
       </div>
     </div>
   );
