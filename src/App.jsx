@@ -56,6 +56,7 @@ function App() {
   const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
   const [accountsViewMode, setAccountsViewMode] = useState('list');
   const [selectedLead, setSelectedLead] = useState(null);
+  const [importType, setImportType] = useState('leads');
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -220,7 +221,7 @@ function App() {
         {activeTab === 'Opportunities' && (
           <OpportunitiesView 
             onAdd={() => setShowAddModal(true)} 
-            onImport={() => setShowImportModal(true)} 
+            onImport={() => { setImportType('leads'); setShowImportModal(true); }} 
             viewMode={opportunitiesViewMode}
             setViewMode={setOpportunitiesViewMode}
             onLeadClick={(lead) => {
@@ -231,7 +232,7 @@ function App() {
         )}
         {activeTab === 'Accounts' && (
           <AccountsView 
-            onImport={() => setShowImportModal(true)} 
+            onImport={() => { setImportType('accounts'); setShowImportModal(true); }} 
             viewMode={accountsViewMode}
             setViewMode={setAccountsViewMode}
           />
@@ -240,7 +241,7 @@ function App() {
         {activeTab === 'Calendar' && <CalendarView />}
         {activeTab === 'Users' && (
           <UsersView 
-            onImport={() => setShowImportModal(true)} 
+            onImport={() => { setImportType('users'); setShowImportModal(true); }} 
             onAdd={() => {
               setUserModalMode('add');
               setSelectedUser(null);
@@ -262,7 +263,7 @@ function App() {
 
       {/* Modals */}
       {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} />}
-      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} />}
+      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} />}
       {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} />}
       {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} />}
       
@@ -348,7 +349,7 @@ const DashboardView = ({ stats, onNavigate, onLeadClick }) => (
       <div className="bottom-card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div className="card-title" style={{ fontSize: '1rem', fontWeight: 700 }}>Recent Opportunities</div>
-          <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>View All</div>
+          <div className="card-link" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => onNavigate('Opportunities')}>View All</div>
         </div>
         <div className="opportunity-list-clean">
           <OpportunityItem name="Berkeley Heath Auto Centre" contact="Paul" onClick={() => onLeadClick({ name: "Berkeley Heath Auto Centre", contact: "Paul", status: "New", phone: "01453 511533", email: "paul@berkeleyauto.co.uk", address: "GL13 9ET", bda: "Oleksiy Radchenko", bdm: "James King" })} />
@@ -1261,39 +1262,48 @@ const ResetPasswordModal = ({ user, onClose }) => {
   );
 };
 
-const ImportLeadsModal = ({ onClose }) => (
-  <div className="modal-overlay">
-    <div className="modal-card">
-      <div className="modal-header">
-        <h2>Import Leads</h2>
-        <button className="modal-close" onClick={onClose}><X size={20} /></button>
-      </div>
-      <div className="modal-body">
-        <div className="import-dropzone">
-          <Upload size={32} color="#2563eb" />
-          <h3>Click or drag CSV file here</h3>
-          <p>Support for .csv, .xls, .xlsx</p>
+const ImportLeadsModal = ({ onClose, type }) => {
+  const templates = {
+    leads: { name: 'Opportunities Template', file: '/leads_template.csv' },
+    accounts: { name: 'Accounts Template', file: '/accounts_template.csv' },
+    users: { name: 'Users Template', file: '/users_template.csv' }
+  };
+  const currentTemplate = templates[type] || templates.leads;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card">
+        <div className="modal-header">
+          <h2>Import {type === 'leads' ? 'Opportunities' : type.charAt(0).toUpperCase() + type.slice(1)}</h2>
+          <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-        <div className="template-box">
-          <div className="template-info">
-            <FileText size={20} color="#64748b" />
-            <div>
-              <h4>CSV Template</h4>
-              <p>Download our template to ensure correct mapping.</p>
-            </div>
+        <div className="modal-body">
+          <div className="import-dropzone">
+            <Upload size={32} color="#2563eb" />
+            <h3>Click or drag CSV file here</h3>
+            <p>Support for .csv, .xls, .xlsx</p>
           </div>
-          <button className="btn-download">
-            <Download size={16} /> Download
-          </button>
+          <div className="template-box">
+            <div className="template-info">
+              <FileText size={20} color="#64748b" />
+              <div>
+                <h4>{currentTemplate.name}</h4>
+                <p>Download our template to ensure correct mapping.</p>
+              </div>
+            </div>
+            <a href={currentTemplate.file} download className="btn-download" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Download size={16} /> Download
+            </a>
+          </div>
         </div>
-      </div>
-      <div className="modal-footer">
-        <button className="btn-secondary" onClick={onClose}>Cancel</button>
-        <button className="btn-primary" onClick={onClose}>Start Import</button>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={onClose}>Start Import</button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, provider, onClick }) => (
   <tr onClick={onClick} style={{ cursor: 'pointer' }}>
