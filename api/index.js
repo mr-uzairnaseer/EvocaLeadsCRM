@@ -5,6 +5,8 @@ const connectDB = require('./utils/db');
 const Lead = require('./models/Lead');
 const User = require('./models/User');
 const Activity = require('./models/Activity');
+const Order = require('./models/Order');
+const Delivery = require('./models/Delivery');
 const jwt = require('jsonwebtoken');
 
 dotenv.config();
@@ -35,7 +37,7 @@ app.get('/api/test-db', async (req, res) => {
 // Auth Middleware
 const auth = async (req, res, next) => {
   // Temporarily bypass for development
-  req.user = { role: 'Admin' };
+  req.user = { id: '645f1b5b9f1b2b3b4b5b6b7b', role: 'Admin' };
   next();
   /*
   try {
@@ -120,8 +122,37 @@ app.get('/api/leads', auth, async (req, res) => {
 app.post('/api/leads', auth, async (req, res) => {
   try {
     await connectDB();
-    const lead = new Lead(req.body);
+    
+    const { companyName, phoneWhatsApp } = req.body;
+    
+    // Duplicate Checking
+    const existingLead = await Lead.findOne({
+      $or: [
+        { companyName: companyName },
+        { phoneWhatsApp: phoneWhatsApp }
+      ]
+    });
+    
+    if (existingLead) {
+      return res.status(400).send({ 
+        error: `Duplicate lead found with same ${existingLead.companyName === companyName ? 'company name' : 'phone number'}.` 
+      });
+    }
+
+    const lead = new Lead({
+      ...req.body,
+      leadOwner: req.user.id // Automatically assigned from logged-in user
+    });
     await lead.save();
+    
+    // Record Activity
+    const activity = new Activity({
+      user: 'System', // Should ideally be req.user.name if available
+      text: `Lead created: ${lead.companyName}`,
+      lead: lead._id
+    });
+    await activity.save();
+    
     res.status(201).send(lead);
   } catch (e) {
     res.status(400).send(e.message);
@@ -132,7 +163,19 @@ app.post('/api/leads', auth, async (req, res) => {
 app.patch('/api/leads/:id', auth, async (req, res) => {
   try {
     await connectDB();
+    const oldLead = await Lead.findById(req.params.id);
     const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    
+    // If status changed, record activity
+    if (oldLead.status !== lead.status) {
+      const activity = new Activity({
+        user: 'System',
+        text: `Status updated from ${oldLead.status} to ${lead.status}`,
+        lead: lead._id
+      });
+      await activity.save();
+    }
+    
     res.send(lead);
   } catch (e) {
     res.status(400).send(e.message);
@@ -220,30 +263,95 @@ app.get('/api/stats', auth, async (req, res) => {
   try {
     await connectDB();
     const leads = await Lead.find();
+    const orders = await Order.find();
+    const deliveries = await Delivery.find();
     
     const pipeline = {
-      New: leads.filter(l => l.status === 'New').length,
-      Contacted: leads.filter(l => l.status === 'Contacted').length,
-      Qualified: leads.filter(l => l.status === 'Qualified').length,
-      Booked: leads.filter(l => l.status === 'Booked').length,
-      Approved: leads.filter(l => l.status === 'Approved').length,
-      Delivered: leads.filter(l => l.status === 'Delivered').length,
-      Transacting: leads.filter(l => l.status === 'Transacting').length,
-      NonTrans: leads.filter(l => l.status === 'Non-Trans').length,
+      'New Lead': leads.filter(l => l.status === 'New Lead').length,
+      'Contacted': leads.filter(l => l.status === 'Contacted').length,
+      'Qualified Lead': leads.filter(l => l.status === 'Qualified Lead').length,
+      'Sample / Price Sent': leads.filter(l => l.status === 'Sample / Price Sent').length,
+      'Order Confirmed': leads.filter(l => l.status === 'Order Confirmed').length,
+      'Delivery Scheduled': leads.filter(l => l.status === 'Delivery Scheduled').length,
+      'Delivered': leads.filter(l => l.status === 'Delivered').length,
+      'Payment Pending': leads.filter(l => l.status === 'Payment Pending').length,
+      'Payment Received': leads.filter(l => l.status === 'Payment Received').length,
+      'Active Customer / Repeat Order': leads.filter(l => l.status === 'Active Customer / Repeat Order').length,
+      'Lost Lead': leads.filter(l => l.status === 'Lost Lead').length,
     };
 
-    const totalValue = leads.reduce((sum, l) => sum + (l.value || 0), 0);
-    const transactingCount = pipeline.Transacting;
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const monthlySales = orders.filter(o => {
+      const orderDate = new Date(o.createdAt);
+      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+    }).reduce((sum, o) => sum + (o.totalOrderValue || 0), 0);
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const todayFollowUps = leads.filter(l => l.nextFollowUpDate && new Date(l.nextFollowUpDate) <= today).length;
     
     res.send({
       totalLeads: leads.length,
-      totalValue,
-      pipeline,
-      conversionRate: leads.length ? Math.round((transactingCount / leads.length) * 100) : 0,
-      wonLeads: transactingCount
+      newLeads: pipeline['New Lead'],
+      hotLeads: pipeline['Qualified Lead'] + pipeline['Sample / Price Sent'],
+      todayFollowUps,
+      samplesSent: deliveries.filter(d => d.deliveryType === 'Sales Sample').length,
+      deliveredOrders: pipeline['Delivered'],
+      monthlySalesValue: monthlySales,
+      lostLeads: pipeline['Lost Lead'],
+      pipeline
     });
   } catch (e) {
     res.status(500).send(e.message);
+  }
+});
+
+// --- ORDER ROUTES ---
+app.get('/api/orders', auth, async (req, res) => {
+  try {
+    await connectDB();
+    const orders = await Order.find().populate('lead').populate('salesPerson');
+    res.send(orders);
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
+app.post('/api/orders', auth, async (req, res) => {
+  try {
+    await connectDB();
+    const order = new Order(req.body);
+    await order.save();
+    
+    // Update lead status when order is confirmed
+    await Lead.findByIdAndUpdate(req.body.lead, { status: 'Order Confirmed' });
+    
+    res.status(201).send(order);
+  } catch (e) {
+    res.status(400).send(e.message);
+  }
+});
+
+// --- DELIVERY ROUTES ---
+app.get('/api/deliveries', auth, async (req, res) => {
+  try {
+    await connectDB();
+    const deliveries = await Delivery.find().populate('lead').populate('order');
+    res.send(deliveries);
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
+app.post('/api/deliveries', auth, async (req, res) => {
+  try {
+    await connectDB();
+    const delivery = new Delivery(req.body);
+    await delivery.save();
+    res.status(201).send(delivery);
+  } catch (e) {
+    res.status(400).send(e.message);
   }
 });
 

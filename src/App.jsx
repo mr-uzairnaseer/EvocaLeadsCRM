@@ -238,7 +238,7 @@ function App() {
             )}
             {activeTab === 'Opportunities' && (
               <OpportunitiesView 
-                leads={leads}
+                leads={leads.filter(l => ['New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 'Lost Lead'].includes(l.status) || !l.status)}
                 onAdd={() => setShowAddModal(true)} 
                 onImport={() => { setImportType('leads'); setShowImportModal(true); }} 
                 viewMode={opportunitiesViewMode}
@@ -251,7 +251,7 @@ function App() {
             )}
             {activeTab === 'Accounts' && (
               <AccountsView 
-                leads={leads.filter(l => ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status))}
+                leads={leads.filter(l => ['Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order'].includes(l.status))}
                 onImport={() => { setImportType('accounts'); setShowImportModal(true); }} 
                 viewMode={accountsViewMode}
                 setViewMode={setAccountsViewMode}
@@ -314,48 +314,71 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
     <section className="stats-grid">
       <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
         <div className="stat-header">
-          <span className="stat-label">Opportunities</span>
+          <span className="stat-label">Total Leads</span>
           <div className="stat-icon-box"><Target size={16} /></div>
         </div>
         <div className="stat-value">{stats?.totalLeads || 0}</div>
-        <div className="stat-subtext">Active in pipeline</div>
-        <div className="stat-link">View <ArrowRight size={12} /></div>
-      </div>
-      <div className="stat-card clickable" onClick={() => onNavigate('Calendar')}>
-        <div className="stat-header">
-          <span className="stat-label">Appointments</span>
-          <div className="stat-icon-box"><Calendar size={16} /></div>
-        </div>
-        <div className="stat-value">{stats?.pipeline?.Booked || 0}</div>
-        <div className="stat-subtext">Total</div>
-        <div className="stat-link">View <ArrowRight size={12} /></div>
-      </div>
-      <div className="stat-card clickable" onClick={() => onNavigate('Accounts')}>
-        <div className="stat-header">
-          <span className="stat-label">Sold</span>
-          <div className="stat-icon-box"><TrendingUp size={16} /></div>
-        </div>
-        <div className="stat-value">{stats?.wonLeads || 0}</div>
-        <div className="stat-subtext">Total accounts</div>
-        <div className="stat-link">View <ArrowRight size={12} /></div>
-      </div>
-      <div className="stat-card clickable" onClick={() => onNavigate('Accounts')}>
-        <div className="stat-header">
-          <span className="stat-label">Conversion</span>
-          <div className="stat-icon-box"><BarChart3 size={16} /></div>
-        </div>
-        <div className="stat-value">{stats?.conversionRate || 0}%</div>
-        <div className="stat-subtext">Opp to account</div>
+        <div className="stat-subtext">All leads in CRM</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
       <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
         <div className="stat-header">
-          <span className="stat-label">Value</span>
-          <div className="stat-icon-box"><Phone size={16} /></div>
+          <span className="stat-label">New Leads</span>
+          <div className="stat-icon-box"><Plus size={16} /></div>
         </div>
-        <div className="stat-value">£{stats?.totalValue?.toLocaleString() || 0}</div>
-        <div className="stat-subtext">Total pipeline value</div>
+        <div className="stat-value">{stats?.newLeads || 0}</div>
+        <div className="stat-subtext">Not contacted yet</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
+        <div className="stat-header">
+          <span className="stat-label">Hot Leads</span>
+          <div className="stat-icon-box"><TrendingUp size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.hotLeads || 0}</div>
+        <div className="stat-subtext">Interested / Qualified</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Calendar')}>
+        <div className="stat-header">
+          <span className="stat-label">Today's Follow-ups</span>
+          <div className="stat-icon-box"><Calendar size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.todayFollowUps || 0}</div>
+        <div className="stat-subtext">Follow-ups due today</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
+      <div className="stat-card clickable">
+        <div className="stat-header">
+          <span className="stat-label">Samples Sent</span>
+          <div className="stat-icon-box"><Download size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.samplesSent || 0}</div>
+        <div className="stat-subtext">Total delivered</div>
+      </div>
+      <div className="stat-card clickable">
+        <div className="stat-header">
+          <span className="stat-label">Delivered Orders</span>
+          <div className="stat-icon-box"><Check size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.deliveredOrders || 0}</div>
+        <div className="stat-subtext">Completed deliveries</div>
+      </div>
+      <div className="stat-card clickable">
+        <div className="stat-header">
+          <span className="stat-label">Monthly Sales</span>
+          <div className="stat-icon-box"><BarChart3 size={16} /></div>
+        </div>
+        <div className="stat-value">£{stats?.monthlySalesValue?.toLocaleString() || 0}</div>
+        <div className="stat-subtext">Current month</div>
+      </div>
+      <div className="stat-card clickable">
+        <div className="stat-header">
+          <span className="stat-label">Lost Leads</span>
+          <div className="stat-icon-box"><X size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.lostLeads || 0}</div>
+        <div className="stat-subtext">Closed without sale</div>
       </div>
     </section>
 
@@ -365,14 +388,17 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
         <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
       </div>
       <div className="pipeline-stepper">
-        <PipelineStep num={stats?.pipeline?.New || 0} label="New" />
-        <PipelineStep num={stats?.pipeline?.Contacted || 0} label="Contacted" />
-        <PipelineStep num={stats?.pipeline?.Qualified || 0} label="Qualified" />
-        <PipelineStep num={stats?.pipeline?.Booked || 0} label="Booked" />
-        <PipelineStep num={stats?.pipeline?.Approved || 0} label="Approved" />
-        <PipelineStep num={stats?.pipeline?.Delivered || 0} label="Delivered" />
-        <PipelineStep num={stats?.pipeline?.Transacting || 0} label="Transacting" />
-        <PipelineStep num={stats?.pipeline?.NonTrans || 0} label="Non-Trans." />
+        <PipelineStep num={stats?.pipeline?.['New Lead'] || 0} label="New Lead" />
+        <PipelineStep num={stats?.pipeline?.['Contacted'] || 0} label="Contacted" />
+        <PipelineStep num={stats?.pipeline?.['Qualified Lead'] || 0} label="Qualified" />
+        <PipelineStep num={stats?.pipeline?.['Sample / Price Sent'] || 0} label="Sample/Price" />
+        <PipelineStep num={stats?.pipeline?.['Order Confirmed'] || 0} label="Order" />
+        <PipelineStep num={stats?.pipeline?.['Delivery Scheduled'] || 0} label="Scheduled" />
+        <PipelineStep num={stats?.pipeline?.['Delivered'] || 0} label="Delivered" />
+        <PipelineStep num={stats?.pipeline?.['Payment Pending'] || 0} label="Pending" />
+        <PipelineStep num={stats?.pipeline?.['Payment Received'] || 0} label="Paid" />
+        <PipelineStep num={stats?.pipeline?.['Active Customer / Repeat Order'] || 0} label="Active" />
+        <PipelineStep num={stats?.pipeline?.['Lost Lead'] || 0} label="Lost" />
       </div>
     </section>
 
@@ -386,8 +412,9 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
           {leads.slice(0, 5).map(lead => (
             <OpportunityItem 
               key={lead._id}
-              name={lead.business} 
-              contact={lead.contactName} 
+              name={lead.companyName} 
+              contact={lead.contactPerson} 
+              status={lead.status}
               onClick={() => onLeadClick(lead)} 
             />
           ))}
@@ -475,14 +502,15 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
               {leads.map(opp => (
                 <TableRow 
                   key={opp._id}
-                  business={opp.business} 
-                  contact={opp.contactName} 
-                  phone={opp.phone} 
+                  business={opp.companyName} 
+                  contact={opp.contactPerson} 
+                  phone={opp.phoneWhatsApp} 
                   postcode={opp.postcode || '—'} 
-                  bda={opp.bda} 
-                  bdm={opp.bdm} 
-                  callback={opp.callback} 
-                  provider={opp.provider || '—'} 
+                  status={opp.status}
+                  bda={opp.leadOwner?.name || '—'} 
+                  bdm={opp.leadOwner?.role === 'BDM' ? opp.leadOwner.name : '—'} 
+                  callback={opp.nextFollowUpDate ? new Date(opp.nextFollowUpDate).toLocaleDateString() : '—'} 
+                  provider={opp.topCompetitorBrandName || '—'} 
                   onClick={() => onLeadClick(opp)}
                 />
               ))}
@@ -500,38 +528,34 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
             >
               <div className="grid-card-header">
                 <div className="grid-card-main">
-                  <h3 className="grid-card-title">{opp.business}</h3>
+                  <h3 className="grid-card-title">{opp.companyName}</h3>
                   <div className="grid-card-meta">
-                    <span>{opp.contactName}</span>
+                    <span>{opp.contactPerson}</span>
                     <span>{opp.postcode}</span>
                   </div>
                 </div>
-                <span className={`status-badge-${(opp.status || 'new').toLowerCase()}`}>{opp.status || 'new'}</span>
+                <span className={`status-badge-${(opp.status || 'new').toLowerCase().replace(/\s+/g, '')}`}>{opp.status || 'New Lead'}</span>
               </div>
               <div className="grid-card-content">
                 <div className="grid-info-row">
                   <Phone size={14} className="grid-icon" />
-                  <span className="grid-phone">{opp.phone}</span>
+                  <span className="grid-phone">{opp.phoneWhatsApp}</span>
                 </div>
-                {opp.provider && (
+                {opp.topCompetitorBrandName && (
                   <div className="grid-info-row">
-                    <span className="grid-label">Provider:</span>
-                    <span className="grid-value">{opp.provider}</span>
+                    <span className="grid-label">Competitor:</span>
+                    <span className="grid-value">{opp.topCompetitorBrandName}</span>
                   </div>
                 )}
                 <div className="grid-team-box">
                   <div className="grid-team-row">
-                    <span className="grid-label">BDA:</span>
-                    <span className="grid-value">{opp.bda}</span>
-                  </div>
-                  <div className="grid-team-row">
-                    <span className="grid-label">BDM:</span>
-                    <span className="grid-value">{opp.bdm}</span>
+                    <span className="grid-label">Owner:</span>
+                    <span className="grid-value">{opp.leadOwner?.name || '—'}</span>
                   </div>
                 </div>
                 <div className="grid-callback-row">
-                  <span className="grid-label">Callback:</span>
-                  <span className="grid-value">{opp.callback}</span>
+                  <span className="grid-label">Follow-up:</span>
+                  <span className="grid-value">{opp.nextFollowUpDate ? new Date(opp.nextFollowUpDate).toLocaleDateString() : '—'}</span>
                 </div>
               </div>
             </div>
@@ -676,8 +700,8 @@ const ContactView = ({ leads }) => {
   const filteredContacts = activeTab === 'All' 
     ? leads 
     : activeTab === 'Opportunities' 
-      ? leads.filter(l => !['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status))
-      : leads.filter(l => ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status));
+      ? leads.filter(l => ['New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 'Lost Lead'].includes(l.status) || !l.status)
+      : leads.filter(l => ['Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order'].includes(l.status));
 
   return (
     <div className="page-content">
@@ -1025,20 +1049,33 @@ const AccountRow = ({ business, contact, phone, postcode, status, volume, mid })
 
 const AddOpportunityModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
-    business: '',
-    contactName: '',
+    companyName: '',
+    businessType: '',
+    contactPerson: '',
+    phoneWhatsApp: '',
     email: '',
-    phone: '',
-    address: '',
-    postcode: '',
-    volume: '',
-    provider: '',
-    bda: 'Unassigned',
-    bdm: 'Unassigned',
+    cityArea: '',
+    interestedProducts: [],
+    leadSource: '',
     notes: ''
   });
 
+  const businessTypes = [
+    'Retail Shop', 'Cash & Carry', 'Wholesaler', 'Distributor', 
+    'Restaurant / Café', 'Supermarket', 'Online Store', 'Event Buyer', 
+    'Hotel', 'Catering Company', 'Gym / Sports Club', 'Other'
+  ];
+
+  const leadSources = ['Website', 'Cold Call', 'Sales Visit', 'Referral', 'Social Media', 'Other'];
+
+  const products = ['Evoca Cola', 'Evoca Orange', 'Evoca Lemon', 'Evoca Apple', 'Evoca Mango', 'Evoca Pomegranate'];
+
   const handleSave = async () => {
+    if (!formData.companyName || !formData.businessType || !formData.phoneWhatsApp || !formData.cityArea) {
+      alert('Please fill in all required fields: Company Name, Business Type, Phone/WhatsApp, and City/Area.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/leads', {
         method: 'POST',
@@ -1046,88 +1083,101 @@ const AddOpportunityModal = ({ onClose, onSuccess }) => {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        // Log activity
         await fetch('/api/activity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            user: 'System', // or current user if implemented
-            text: `New lead created: ${formData.business}`
+            user: 'System',
+            text: `New lead created: ${formData.companyName}`
           })
         });
         onSuccess();
         onClose();
+      } else {
+        const err = await res.text();
+        alert('Error: ' + err);
       }
     } catch (e) {
       console.error('Error creating lead:', e);
     }
   };
 
+  const toggleProduct = (product) => {
+    setFormData(prev => ({
+      ...prev,
+      interestedProducts: prev.interestedProducts.includes(product)
+        ? prev.interestedProducts.filter(p => p !== product)
+        : [...prev.interestedProducts, product]
+    }));
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-card">
         <div className="modal-header">
-          <h2>Add New Opportunity</h2>
+          <h2>Add New Lead</h2>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="modal-body-scrollable">
           <div className="form-grid">
             <div className="form-field">
-              <label>Business Name *</label>
-              <input type="text" value={formData.business} onChange={e => setFormData({...formData, business: e.target.value})} />
+              <label>Company / Shop Name *</label>
+              <input type="text" value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} />
             </div>
             <div className="form-field">
-              <label>Contact Name</label>
-              <input type="text" value={formData.contactName} onChange={e => setFormData({...formData, contactName: e.target.value})} />
+              <label>Business Type *</label>
+              <select className="form-select" value={formData.businessType} onChange={e => setFormData({...formData, businessType: e.target.value})}>
+                <option value="">Select Type</option>
+                {businessTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-field">
+              <label>Contact Person</label>
+              <input type="text" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} />
+            </div>
+            <div className="form-field">
+              <label>Phone / WhatsApp *</label>
+              <input type="text" value={formData.phoneWhatsApp} onChange={e => setFormData({...formData, phoneWhatsApp: e.target.value})} />
             </div>
             <div className="form-field">
               <label>Email</label>
               <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
             <div className="form-field">
-              <label>Phone</label>
-              <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+              <label>City / Area *</label>
+              <input type="text" value={formData.cityArea} onChange={e => setFormData({...formData, cityArea: e.target.value})} />
             </div>
             <div className="form-field full-width">
-              <label>Full Address</label>
-              <input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+              <label>Interested Products</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+                {products.map(p => (
+                  <button 
+                    key={p} 
+                    className={`btn-secondary ${formData.interestedProducts.includes(p) ? 'active' : ''}`}
+                    onClick={() => toggleProduct(p)}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: formData.interestedProducts.includes(p) ? '#dcfce7' : '' }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="form-field">
-              <label>Postcode</label>
-              <input type="text" value={formData.postcode} onChange={e => setFormData({...formData, postcode: e.target.value})} />
-            </div>
-            <div className="form-field">
-              <label>Est. Monthly Volume</label>
-              <input type="text" placeholder="e.g. $50,000" value={formData.volume} onChange={e => setFormData({...formData, volume: e.target.value})} />
-            </div>
-            <div className="form-field">
-              <label>Current Provider</label>
-              <input type="text" placeholder="e.g. WorldPay" value={formData.provider} onChange={e => setFormData({...formData, provider: e.target.value})} />
-            </div>
-            <div className="form-field">
-              <label>Assign BDA</label>
-              <select className="form-select" value={formData.bda} onChange={e => setFormData({...formData, bda: e.target.value})}>
-                <option>Unassigned</option>
-                <option>Oleksiy Radchenko</option>
-                <option>Vandan Popat</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label>Assign BDM</label>
-              <select className="form-select" value={formData.bdm} onChange={e => setFormData({...formData, bdm: e.target.value})}>
-                <option>Unassigned</option>
-                <option>James King</option>
+              <label>Lead Source</label>
+              <select className="form-select" value={formData.leadSource} onChange={e => setFormData({...formData, leadSource: e.target.value})}>
+                <option value="">Select Source</option>
+                {leadSources.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="form-field full-width">
               <label>Notes</label>
-              <textarea rows="4" placeholder="Add internal notes..." value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
+              <textarea rows="4" placeholder="Additional details..." value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
             </div>
           </div>
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleSave}>Create Opportunity</button>
+          <button className="btn-primary" onClick={handleSave}>Create Lead</button>
         </div>
       </div>
     </div>
@@ -1138,15 +1188,15 @@ const SearchPopup = ({ leads, users, onLeadClick, onClose }) => {
   const [query, setQuery] = useState('');
 
   const leadsResults = leads.filter(l => 
-    l.business.toLowerCase().includes(query.toLowerCase()) ||
-    (l.contactName && l.contactName.toLowerCase().includes(query.toLowerCase())) ||
+    (l.companyName && l.companyName.toLowerCase().includes(query.toLowerCase())) ||
+    (l.contactPerson && l.contactPerson.toLowerCase().includes(query.toLowerCase())) ||
     (l.postcode && l.postcode.toLowerCase().includes(query.toLowerCase()))
   ).map(l => ({
     id: l._id,
-    type: ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status) ? 'Account' : 'Opportunity',
-    title: l.business,
-    subtitle: `${l.contactName || ''} • ${l.postcode || ''}`,
-    icon: ['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status) ? 'Building2' : 'Target',
+    type: ['Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order'].includes(l.status) ? 'Account' : 'Opportunity',
+    title: l.companyName,
+    subtitle: `${l.contactPerson || ''} • ${l.postcode || ''}`,
+    icon: ['Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order'].includes(l.status) ? 'Building2' : 'Target',
     original: l
   }));
 
@@ -1417,12 +1467,13 @@ const ImportLeadsModal = ({ onClose, type, onSuccess }) => {
             handle: item.Handle,
             password: 'password123' // Default password for imported users
           } : {
-            business: item.Business,
-            contactName: item.Contact,
-            phone: item.Phone,
+            companyName: item.Business || item.CompanyName,
+            contactPerson: item.Contact || item.ContactPerson,
+            phoneWhatsApp: item.Phone || item.PhoneWhatsApp,
             email: item.Email,
             postcode: item.Postcode,
-            status: type === 'accounts' ? 'Approved' : 'New'
+            cityArea: item.CityArea || item.Area,
+            status: type === 'accounts' ? 'Active Customer / Repeat Order' : 'New Lead'
           };
 
           await fetch(endpoint, {
@@ -1499,7 +1550,7 @@ const ImportLeadsModal = ({ onClose, type, onSuccess }) => {
   );
 };
 
-const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, provider, onClick }) => (
+const TableRow = ({ business, contact, phone, postcode, status, bda, bdm, callback, provider, onClick }) => (
   <tr onClick={onClick} style={{ cursor: 'pointer' }}>
     <td><input type="checkbox" /></td>
     <td className="business-cell">{business}</td>
@@ -1508,7 +1559,7 @@ const TableRow = ({ business, contact, phone, postcode, bda, bdm, callback, prov
       {phone} {phone !== '—' && <Copy size={12} className="copy-icon" />}
     </td>
     <td>{postcode}</td>
-    <td><span className="new-badge">new</span></td>
+    <td><span className={`status-badge-${(status || 'new').toLowerCase().replace(/\s+/g, '')}`}>{status || 'New Lead'}</span></td>
     <td className="team-cell">{bda}</td>
     <td className="team-cell">{bdm}</td>
     <td>{callback}</td>
@@ -1530,13 +1581,13 @@ const PipelineStep = ({ num, label }) => (
   </div>
 );
 
-const OpportunityItem = ({ name, contact, onClick }) => (
+const OpportunityItem = ({ name, contact, status, onClick }) => (
   <div className="opportunity-item-clean" onClick={onClick} style={{ cursor: 'pointer' }}>
     <div className="opp-info">
       <div className="opp-business-name">{name}</div>
       <div className="opp-contact-name">{contact}</div>
     </div>
-    <div className="new-badge-filled">new</div>
+    <div className={`status-badge-${(status || 'new').toLowerCase().replace(/\s+/g, '')}`}>{status || 'New Lead'}</div>
   </div>
 );
 
@@ -1545,33 +1596,26 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
   const [updating, setUpdating] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [contactForm, setContactForm] = useState({
-    business: lead?.business || '',
-    contactName: lead?.contactName || '',
-    phone: lead?.phone || '',
+    companyName: lead?.companyName || '',
+    contactPerson: lead?.contactPerson || '',
+    phoneWhatsApp: lead?.phoneWhatsApp || '',
     email: lead?.email || '',
-    address: lead?.address || '',
-    provider: lead?.provider || ''
+    cityArea: lead?.cityArea || '',
+    postcode: lead?.postcode || '',
+    businessType: lead?.businessType || ''
   });
 
   if (!lead) return null;
 
-  const handleUpdateStatus = async (newStatus) => {
+  const handleUpdateStatus = async (newStatus, extraFields = {}) => {
     setUpdating(true);
     try {
       const res = await fetch(`/api/leads/${lead._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, ...extraFields })
       });
       if (res.ok) {
-        await fetch('/api/activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user: 'Umair',
-            text: `Updated status for ${lead.business} to ${newStatus}`
-          })
-        });
         onSuccess();
       }
     } catch (e) {
@@ -1582,7 +1626,7 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${lead.business}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ${lead.companyName}?`)) return;
     try {
       const res = await fetch(`/api/leads/${lead._id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -1618,7 +1662,8 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user: 'Umair',
-          text: `Note on ${lead.business}: ${note}`
+          text: note,
+          lead: lead._id
         })
       });
       if (res.ok) {
@@ -1630,25 +1675,12 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
     }
   };
 
-  const handleUpdateCallback = async () => {
-    const newDate = window.prompt("Enter callback date (e.g., 20/05/2026 10:00 AM)", lead.callback || "");
-    if (!newDate) return;
-    try {
-      const res = await fetch(`/api/leads/${lead._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback: newDate })
-      });
-      if (res.ok) {
-        onSuccess();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const statuses = ['New', 'Contacted', 'Qualified', 'Booked', 'Approved', 'Delivered', 'Transacting', 'Non-Trans'];
-  const currentIndex = statuses.indexOf(lead.status || 'New');
+  const statuses = [
+    'New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 
+    'Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 
+    'Payment Received', 'Active Customer / Repeat Order', 'Lost Lead'
+  ];
+  const currentIndex = statuses.indexOf(lead.status || 'New Lead');
 
   return (
     <div className="page-content">
@@ -1658,156 +1690,234 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
             <ChevronLeft size={24} color="#111827" />
           </button>
           <div className="lead-title-group">
-            <h2>{lead.business}</h2>
-            <p>{lead.contactName} • {lead.postcode}</p>
+            <h2>{lead.companyName}</h2>
+            <p>{lead.contactPerson} • {lead.cityArea}</p>
           </div>
         </div>
         <div className="lead-header-right">
-          <span className={`status-badge-${(lead.status || 'new').toLowerCase().replace('-', '')}`} style={{ padding: '6px 16px', borderRadius: '8px' }}>
-            {lead.status || 'New'}
+          <span className={`status-badge-${(lead.status || 'new').toLowerCase().replace(/\s+/g, '')}`} style={{ padding: '6px 16px', borderRadius: '8px' }}>
+            {lead.status || 'New Lead'}
           </span>
           <button className="trash-btn" onClick={handleDelete}><Trash2 size={20} /></button>
         </div>
       </header>
 
-      <div className="lead-stepper">
-        <div className="step-line"></div>
-        <div className="step-line-active" style={{ width: `${(currentIndex / (statuses.length - 1)) * 100}%` }}></div>
-        {statuses.slice(0, 5).map((s, i) => (
-          <div 
-            key={s} 
-            className={`step-item ${i <= currentIndex ? 'active' : ''}`}
-            onClick={() => handleUpdateStatus(s)}
-            style={{ cursor: 'pointer' }}
-          >
-            <span className="step-label">{s}</span>
-          </div>
-        ))}
+      <div className="lead-stepper-container" style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+        <div className="lead-stepper" style={{ minWidth: '1200px' }}>
+          <div className="step-line"></div>
+          <div className="step-line-active" style={{ width: `${(currentIndex / (statuses.length - 1)) * 100}%` }}></div>
+          {statuses.map((s, i) => (
+            <div 
+              key={s} 
+              className={`step-item ${i <= currentIndex ? 'active' : ''}`}
+              onClick={() => handleUpdateStatus(s)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="step-dot">{i + 1}</div>
+              <span className="step-label" style={{ fontSize: '10px' }}>{s}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="lead-grid-cols">
-        <div className="details-card">
-          <div className="card-title-row">
-            <h3>Contact Details</h3>
-            {isEditingContact ? (
-              <button className="btn-save-mini" onClick={handleSaveContact}>Save</button>
-            ) : (
-              <Edit3 size={18} color="#6b7280" style={{ cursor: 'pointer' }} onClick={() => setIsEditingContact(true)} />
+        <div className="details-column">
+          <div className="details-card">
+            <div className="card-title-row">
+              <h3>Company Info</h3>
+              {isEditingContact ? (
+                <button className="btn-save-mini" onClick={handleSaveContact}>Save</button>
+              ) : (
+                <Edit3 size={18} color="#6b7280" style={{ cursor: 'pointer' }} onClick={() => setIsEditingContact(true)} />
+              )}
+            </div>
+            <div className="contact-info-list">
+              <div className="contact-info-item">
+                <Building size={18} />
+                {isEditingContact ? (
+                  <input type="text" value={contactForm.companyName} onChange={e => setContactForm({...contactForm, companyName: e.target.value})} />
+                ) : (
+                  <span>{lead.companyName}</span>
+                )}
+              </div>
+              <div className="contact-info-item">
+                <Target size={18} />
+                {isEditingContact ? (
+                  <select className="form-select" value={contactForm.businessType} onChange={e => setContactForm({...contactForm, businessType: e.target.value})}>
+                    {['Retail Shop', 'Cash & Carry', 'Wholesaler', 'Distributor', 'Restaurant / Café', 'Supermarket', 'Online Store', 'Event Buyer', 'Hotel', 'Catering Company', 'Gym / Sports Club', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                ) : (
+                  <span>{lead.businessType}</span>
+                )}
+              </div>
+              <div className="contact-info-item">
+                <User size={18} />
+                {isEditingContact ? (
+                  <input type="text" value={contactForm.contactPerson} onChange={e => setContactForm({...contactForm, contactPerson: e.target.value})} />
+                ) : (
+                  <span>{lead.contactPerson || 'No contact person'}</span>
+                )}
+              </div>
+              <div className="contact-info-item">
+                <Phone size={18} />
+                {isEditingContact ? (
+                  <input type="text" value={contactForm.phoneWhatsApp} onChange={e => setContactForm({...contactForm, phoneWhatsApp: e.target.value})} />
+                ) : (
+                  <span>{lead.phoneWhatsApp}</span>
+                )}
+              </div>
+              <div className="contact-info-item">
+                <Mail size={18} />
+                {isEditingContact ? (
+                  <input type="email" value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
+                ) : (
+                  <span>{lead.email || 'No email'}</span>
+                )}
+              </div>
+              <div className="contact-info-item">
+                <Building2 size={18} />
+                {isEditingContact ? (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="text" placeholder="City" value={contactForm.cityArea} onChange={e => setContactForm({...contactForm, cityArea: e.target.value})} />
+                    <input type="text" placeholder="Postcode" value={contactForm.postcode} onChange={e => setContactForm({...contactForm, postcode: e.target.value})} />
+                  </div>
+                ) : (
+                  <span>{lead.cityArea} {lead.postcode ? `(${lead.postcode})` : ''}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="details-card" style={{ marginTop: '1.5rem' }}>
+            <div className="card-title-row">
+              <h3>Workflow Stages</h3>
+            </div>
+            
+            {/* Stage: Contacted */}
+            <div className="workflow-section">
+              <h4>1. Contact Information</h4>
+              <div className="form-grid-mini">
+                <div className="form-field">
+                  <label>Date Contacted</label>
+                  <input type="datetime-local" value={lead.dateContacted ? new Date(lead.dateContacted).toISOString().slice(0, 16) : ''} onChange={e => handleUpdateStatus(lead.status, { dateContacted: e.target.value })} />
+                </div>
+                <div className="form-field">
+                  <label>Method</label>
+                  <select value={lead.contactMethod || ''} onChange={e => handleUpdateStatus(lead.status, { contactMethod: e.target.value })}>
+                    <option value="">Select Method</option>
+                    {['Call', 'WhatsApp', 'Visit', 'Email'].map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label>Response</label>
+                  <select value={lead.response || ''} onChange={e => handleUpdateStatus(lead.status, { response: e.target.value })}>
+                    <option value="">Select Response</option>
+                    {['Interested', 'No Response', 'Not Interested'].map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {lead.response === 'Interested' && (
+              <div className="workflow-section">
+                <h4>2. Qualification</h4>
+                <div className="form-grid-mini">
+                  <div className="form-field">
+                    <label>Sells Competitors?</label>
+                    <select value={lead.sellsCompetitorBrands || ''} onChange={e => handleUpdateStatus(lead.status, { sellsCompetitorBrands: e.target.value })}>
+                      <option value="">Select</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                  {lead.sellsCompetitorBrands === 'Yes' && (
+                    <div className="form-field">
+                      <label>Competitor Brand</label>
+                      <input type="text" value={lead.topCompetitorBrandName || ''} onChange={e => handleUpdateStatus(lead.status, { topCompetitorBrandName: e.target.value })} />
+                    </div>
+                  )}
+                  <div className="form-field">
+                    <label>Decision Maker</label>
+                    <select value={lead.decisionMaker || ''} onChange={e => handleUpdateStatus(lead.status, { decisionMaker: e.target.value })}>
+                      {['POC', 'Owner', 'Manager', 'Buyer', 'Other'].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
             )}
-          </div>
-          <div className="contact-info-list">
-            <div className="contact-info-item">
-              <Phone size={18} />
-              {isEditingContact ? (
-                <input type="text" value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
-              ) : (
-                <span>{lead.phone || 'No phone'}</span>
-              )}
-            </div>
-            <div className="contact-info-item">
-              <Mail size={18} />
-              {isEditingContact ? (
-                <input type="email" value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
-              ) : (
-                <span>{lead.email || 'No email'}</span>
-              )}
-            </div>
-            <div className="contact-info-item">
-              <Building size={18} />
-              {isEditingContact ? (
-                <input type="text" value={contactForm.address} onChange={e => setContactForm({...contactForm, address: e.target.value})} />
-              ) : (
-                <span>{lead.address || lead.postcode || 'No address'}</span>
-              )}
-            </div>
-          </div>
-          <div className="field-group" style={{ marginTop: '1.5rem' }}>
-            <div className="field-label">Current Provider</div>
-            {isEditingContact ? (
-              <input type="text" value={contactForm.provider} onChange={e => setContactForm({...contactForm, provider: e.target.value})} />
-            ) : (
-              <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
-                <span>{lead.provider || 'None'}</span>
-                <ChevronDown size={14} />
+
+            {lead.response === 'Not Interested' && (
+              <div className="workflow-section">
+                <h4>2. Lost Reason</h4>
+                <div className="form-field">
+                  <label>Reason</label>
+                  <select value={lead.lostReason || ''} onChange={e => handleUpdateStatus('Lost Lead', { lostReason: e.target.value })}>
+                    {['Already has supplier', 'Delivery area issue', 'Low demand', 'Competitor gave better deal', 'Price issue', 'Wrong contact details', 'Not selling soft drinks', 'Not interested at the moment', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
-            <div className="contact-info-item" style={{ fontSize: '0.875rem' }}>
-              <UserCircle size={18} />
-              <span>BDA: {lead.bda}</span>
-            </div>
-            <div className="contact-info-item" style={{ fontSize: '0.875rem' }}>
-              <UserCircle size={18} />
-              <span>BDM: {lead.bdm}</span>
-            </div>
-          </div>
         </div>
 
-        <div className="details-card">
-          <div className="card-title-row">
-            <h3>Actions</h3>
-          </div>
-          <div className="field-group">
-            <div className="field-label">Status</div>
-            <select 
-              className="form-select" 
-              value={lead.status} 
-              onChange={(e) => handleUpdateStatus(e.target.value)}
-              disabled={updating}
-            >
-              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="field-group">
-            <div className="field-label">Assigned BDA</div>
-            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
-              <span>{lead.bda}</span>
-              <ChevronDown size={14} />
+        <div className="actions-column">
+          <div className="details-card">
+            <div className="card-title-row">
+              <h3>Action Center</h3>
+            </div>
+            <div className="field-group">
+              <div className="field-label">Current Status</div>
+              <select 
+                className="form-select" 
+                value={lead.status} 
+                onChange={(e) => handleUpdateStatus(e.target.value)}
+                disabled={updating}
+              >
+                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="field-group">
+              <div className="field-label">Next Follow-up</div>
+              <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
+                <span>{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleString() : 'Not scheduled'}</span>
+                <Calendar size={14} />
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button className="action-btn-white" style={{ width: '100%' }}>
+                <Plus size={18} /> Create Order
+              </button>
+              <button className="action-btn-white" style={{ width: '100%' }}>
+                <Download size={18} /> Schedule Delivery
+              </button>
             </div>
           </div>
-          <div className="field-group">
-            <div className="field-label">Assigned BDM</div>
-            <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
-              <span>{lead.bdm}</span>
-              <ChevronDown size={14} />
-            </div>
-          </div>
-          <button className="action-btn-white" onClick={handleUpdateCallback}>
-            <Calendar size={18} /> Update Callback
-          </button>
-          <div className="callback-info-box">
-            <Calendar size={16} /> Callback: {lead.callback || 'Not scheduled'}
-          </div>
-          {currentIndex < 4 && (
-            <button className="btn-convert" onClick={() => handleUpdateStatus('Approved')}>
-              <PlayCircle size={20} /> Convert to Account
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div className="activity-history-card">
-        <div className="card-title-row">
-          <h3>Activity History</h3>
-        </div>
-        <div className="note-input-container">
-          <textarea 
-            className="note-textarea" 
-            placeholder="Add a note..." 
-            value={note}
-            onChange={e => setNote(e.target.value)}
-          ></textarea>
-          <button className="note-send-btn" onClick={handleAddNote}>
-            <MessageSquare size={18} />
-          </button>
-        </div>
-        <div className="history-timeline">
-          <div className="history-item">
-            <div className="history-dot"></div>
-            <div className="history-content">
-              <div className="history-text">Lead status is currently: {lead.status || 'New'}</div>
-              <div className="history-time">{new Date(lead.updatedAt || Date.now()).toLocaleString()}</div>
+          <div className="activity-history-card" style={{ marginTop: '1.5rem' }}>
+            <div className="card-title-row">
+              <h3>Activity & Notes</h3>
+            </div>
+            <div className="note-input-container">
+              <textarea 
+                className="note-textarea" 
+                placeholder="Add a note..." 
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              ></textarea>
+              <button className="note-send-btn" onClick={handleAddNote}>
+                <MessageSquare size={18} />
+              </button>
+            </div>
+            <div className="history-timeline">
+              {/* This should ideally be a filtered activity list for this lead */}
+              <div className="history-item">
+                <div className="history-dot"></div>
+                <div className="history-content">
+                  <div className="history-text">Lead status is: {lead.status}</div>
+                  <div className="history-time">{new Date(lead.updatedAt).toLocaleString()}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
