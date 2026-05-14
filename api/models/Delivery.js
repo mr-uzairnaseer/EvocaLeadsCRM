@@ -26,7 +26,8 @@ const deliverySchema = new mongoose.Schema({
   proofOfDelivery: { type: String }, // URL or File path
   notes: { type: String },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', required: true }
 });
 
 deliverySchema.pre('save', function(next) {

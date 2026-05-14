@@ -5,13 +5,18 @@ import {
   PanelLeft, Search, Moon, BarChart3, RefreshCw, 
   TrendingUp, Phone, ArrowRight, Activity, 
   Upload, Plus, Filter, MoreHorizontal, Copy, Grid, List, ChevronDown, Check, ChevronLeft, X, FileText, Download, Building,
-  MessageSquare, Eye, PlayCircle, Clock, Mail, Edit3, UserX, Key, Trash2
+  MessageSquare, Eye, EyeOff, PlayCircle, Clock, Mail, Edit3, UserX, Key, Trash2
 } from 'lucide-react';
 import './index.css';
 
 
 
 function App() {
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user')));
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [workspace, setWorkspace] = useState(() => JSON.parse(localStorage.getItem('workspace')));
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -34,13 +39,36 @@ function App() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+
+  const handleLogin = (data) => {
+    setUser(data.user);
+    setToken(data.token);
+    setWorkspace(data.workspace);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('workspace', JSON.stringify(data.workspace));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setToken(null);
+    setWorkspace(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('workspace');
+  };
+
   const fetchData = async () => {
     try {
       const [leadsRes, usersRes, activityRes, statsRes] = await Promise.all([
-        fetch('/api/leads'),
-        fetch('/api/users'),
-        fetch('/api/activity'),
-        fetch('/api/stats')
+        fetch('/api/leads', { headers: authHeaders }),
+        fetch('/api/users', { headers: authHeaders }),
+        fetch('/api/activity', { headers: authHeaders }),
+        fetch('/api/stats', { headers: authHeaders })
       ]);
       
       const leadsData = await leadsRes.json();
@@ -60,8 +88,8 @@ function App() {
   };
 
   React.useEffect(() => {
-    fetchData();
-  }, []);
+    if (token) fetchData();
+  }, [token]);
 
   const handleLeadAction = async (action, data) => {
     // Placeholder for global actions like refresh after edit/add
@@ -82,12 +110,73 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleDeactivateUser = async (targetUser) => {
+    const newStatus = targetUser.status === 'inactive' ? 'active' : 'inactive';
+    try {
+      const res = await fetch(`/api/users/${targetUser._id}`, {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteUser = async (targetUser) => {
+    if (!window.confirm(`Are you sure you want to delete ${targetUser.name}?`)) return;
+    try {
+      const res = await fetch(`/api/users/${targetUser._id}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
+      if (res.ok) fetchData();
+      else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete user');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch('/api/activity/mark-all-read', {
+        method: 'POST',
+        headers: authHeaders
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteActivity = async (id) => {
+    try {
+      const res = await fetch(`/api/activity/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  if (!token) {
+    return authMode === 'login' 
+      ? <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthMode('signup')} />
+      : <SignupPage onSignup={handleLogin} onSwitchToLogin={() => setAuthMode('login')} />;
+  }
+
   return (
     <div className={`app-container ${!sidebarOpen ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar */}
       <aside className={`sidebar ${!sidebarOpen ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
-          <div className="brand-box">Evoca</div>
+          <div className="brand-box">{workspace?.name || 'CRM'}</div>
         </div>
 
         <div className="sidebar-scrollable">
@@ -135,29 +224,40 @@ function App() {
             </div>
           </nav>
 
-          <div className="nav-section-label">Admin</div>
-          <nav className="nav-menu">
-            <div 
-              className={`nav-item ${activeTab === 'Users' ? 'active' : ''}`}
-              onClick={() => setActiveTab('Users')}
-            >
-              <div className="nav-item-icon"><Users size={18} /></div>
-              <span>Users</span>
-              {activeTab === 'Users' && <ChevronRight size={14} className="nav-item-arrow" />}
-            </div>
-          </nav>
+          {(user?.role === 'BDM' || user?.role === 'Admin' || user?.isOwner) && (
+            <>
+              <div className="nav-section-label">Management</div>
+              <nav className="nav-menu">
+                <div 
+                  className={`nav-item ${activeTab === 'Users' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('Users')}
+                >
+                  <div className="nav-item-icon"><Users size={18} /></div>
+                  <span>Users</span>
+                  {activeTab === 'Users' && <ChevronRight size={14} className="nav-item-arrow" />}
+                </div>
+              </nav>
+            </>
+          )}
 
           <div className="nav-section-label">Team</div>
-          <div className="team-subtitle">ADMIN</div>
+          <div className="team-subtitle">OWNER</div>
           <div className="team-list">
-            {usersList.filter(u => u.role === 'Admin').map(u => (
+            {usersList.filter(u => u.isOwner).map(u => (
               <TeamMember key={u._id} name={u.name} />
             ))}
           </div>
 
-          <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>BDM / BDA</div>
+          <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>MANAGER</div>
           <div className="team-list">
-            {usersList.filter(u => ['BDM', 'BDA'].includes(u.role)).map(u => (
+            {usersList.filter(u => !u.isOwner && (u.role === 'BDM' || u.role === 'Admin')).map(u => (
+              <TeamMember key={u._id} name={u.name} />
+            ))}
+          </div>
+
+          <div className="team-subtitle" style={{ marginTop: '1.5rem' }}>AGENTS</div>
+          <div className="team-list">
+            {usersList.filter(u => !u.isOwner && u.role === 'BDA').map(u => (
               <TeamMember key={u._id} name={u.name} />
             ))}
           </div>
@@ -165,14 +265,14 @@ function App() {
 
         <div className="sidebar-footer">
           <div className="user-profile">
-            <div className="user-avatar">U</div>
+            <div className="user-avatar">{user?.name?.charAt(0).toUpperCase()}</div>
             <div className="user-info">
-              <div className="user-name">Umair</div>
-              <div className="user-email">mr.umairnaseer@gmai...</div>
+              <div className="user-name">{user?.name}</div>
+              <div className="user-email">{user?.email}</div>
             </div>
           </div>
           
-          <div className="logout-btn">
+          <div className="logout-btn" onClick={handleLogout}>
             <LogOut size={18} />
             <span>Log out</span>
           </div>
@@ -202,11 +302,15 @@ function App() {
               <div className="notification-dot"></div>
             </button>
             {showNotifications && (
-              <NotificationsPopup 
-                onClose={() => setShowNotifications(false)} 
-                onNavigate={() => setActiveTab('Notifications')}
-                activity={activityList}
-              />
+              <>
+                <div className="popup-overlay-transparent" onClick={() => setShowNotifications(false)}></div>
+                <NotificationsPopup 
+                  onClose={() => setShowNotifications(false)} 
+                  onNavigate={() => setActiveTab('Notifications')}
+                  activity={activityList}
+                  onMarkAllRead={handleMarkAllRead}
+                />
+              </>
             )}
           </div>
         </header>
@@ -234,6 +338,8 @@ function App() {
                 lead={selectedLead} 
                 onBack={() => setActiveTab('Dashboard')} 
                 onSuccess={fetchData}
+                authHeaders={authHeaders}
+                users={usersList}
               />
             )}
             {activeTab === 'Opportunities' && (
@@ -263,10 +369,10 @@ function App() {
             )}
             {activeTab === 'Contact' && <ContactView leads={leads} />}
             {activeTab === 'Calendar' && <CalendarView leads={leads} />}
-            {activeTab === 'Users' && (
+            {activeTab === 'Users' && (user?.role === 'BDM' || user?.role === 'Admin' || user?.isOwner) && (
               <UsersView 
                 users={usersList}
-                onImport={() => setShowImportModal(true)} 
+                onImport={() => { setImportType('users'); setShowImportModal(true); }} 
                 onAdd={() => {
                   setUserModalMode('add');
                   setSelectedUser(null);
@@ -277,22 +383,31 @@ function App() {
                   setSelectedUser(user);
                   setShowUserModal(true);
                 }}
-                onResetPassword={(name) => {
-                  setResetTargetUser(name);
+                onResetPassword={(targetUser) => {
+                  setResetTargetUser(targetUser);
                   setShowResetPasswordModal(true);
                 }}
+                onDeactivate={handleDeactivateUser}
+                onDelete={handleDeleteUser}
+                currentUser={user}
               />
             )}
-            {activeTab === 'Notifications' && <NotificationsView activity={activityList} />}
+            {activeTab === 'Notifications' && (
+              <NotificationsView 
+                activity={activityList} 
+                onMarkAllRead={handleMarkAllRead} 
+                onDelete={handleDeleteActivity}
+              />
+            )}
           </>
         )}
       </main>
 
       {/* Modals */}
-      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} onSuccess={fetchData} />}
-      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} onSuccess={fetchData} />}
-      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} onSuccess={fetchData} />}
-      {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} />}
+      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} onSuccess={fetchData} authHeaders={authHeaders} users={usersList} />}
+      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} onSuccess={fetchData} authHeaders={authHeaders} />}
+      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} onSuccess={fetchData} authHeaders={authHeaders} currentUser={user} />}
+      {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} authHeaders={authHeaders} />}
       
       {/* Search Popup */}
       {showSearchPopup && <SearchPopup onClose={() => setShowSearchPopup(false)} leads={leads} users={usersList} onLeadClick={(lead) => {
@@ -314,7 +429,7 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
     <section className="stats-grid">
       <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
         <div className="stat-header">
-          <span className="stat-label">Total Leads</span>
+          <span className="stat-label">Total</span>
           <div className="stat-icon-box"><Target size={16} /></div>
         </div>
         <div className="stat-value">{stats?.totalLeads || 0}</div>
@@ -323,25 +438,16 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
       </div>
       <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
         <div className="stat-header">
-          <span className="stat-label">New Leads</span>
+          <span className="stat-label">New</span>
           <div className="stat-icon-box"><Plus size={16} /></div>
         </div>
         <div className="stat-value">{stats?.newLeads || 0}</div>
         <div className="stat-subtext">Not contacted yet</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
-      <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
-        <div className="stat-header">
-          <span className="stat-label">Hot Leads</span>
-          <div className="stat-icon-box"><TrendingUp size={16} /></div>
-        </div>
-        <div className="stat-value">{stats?.hotLeads || 0}</div>
-        <div className="stat-subtext">Interested / Qualified</div>
-        <div className="stat-link">View <ArrowRight size={12} /></div>
-      </div>
       <div className="stat-card clickable" onClick={() => onNavigate('Calendar')}>
         <div className="stat-header">
-          <span className="stat-label">Today's Follow-ups</span>
+          <span className="stat-label">Follow Ups</span>
           <div className="stat-icon-box"><Calendar size={16} /></div>
         </div>
         <div className="stat-value">{stats?.todayFollowUps || 0}</div>
@@ -350,7 +456,7 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
       </div>
       <div className="stat-card clickable">
         <div className="stat-header">
-          <span className="stat-label">Samples Sent</span>
+          <span className="stat-label">Sample Sent</span>
           <div className="stat-icon-box"><Download size={16} /></div>
         </div>
         <div className="stat-value">{stats?.samplesSent || 0}</div>
@@ -358,23 +464,7 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
       </div>
       <div className="stat-card clickable">
         <div className="stat-header">
-          <span className="stat-label">Delivered Orders</span>
-          <div className="stat-icon-box"><Check size={16} /></div>
-        </div>
-        <div className="stat-value">{stats?.deliveredOrders || 0}</div>
-        <div className="stat-subtext">Completed deliveries</div>
-      </div>
-      <div className="stat-card clickable">
-        <div className="stat-header">
-          <span className="stat-label">Monthly Sales</span>
-          <div className="stat-icon-box"><BarChart3 size={16} /></div>
-        </div>
-        <div className="stat-value">£{stats?.monthlySalesValue?.toLocaleString() || 0}</div>
-        <div className="stat-subtext">Current month</div>
-      </div>
-      <div className="stat-card clickable">
-        <div className="stat-header">
-          <span className="stat-label">Lost Leads</span>
+          <span className="stat-label">Lost</span>
           <div className="stat-icon-box"><X size={16} /></div>
         </div>
         <div className="stat-value">{stats?.lostLeads || 0}</div>
@@ -385,19 +475,17 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
     <section className="pipeline-section">
       <div className="pipeline-top">
         <div className="pipeline-title">Pipeline</div>
-        <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead to Transacting</div>
+        <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead Journey</div>
       </div>
       <div className="pipeline-stepper">
-        <PipelineStep num={stats?.pipeline?.['New Lead'] || 0} label="New Lead" />
+        <PipelineStep num={stats?.totalLeads || 0} label="Total" />
+        <PipelineStep num={stats?.pipeline?.['New Lead'] || 0} label="New" />
         <PipelineStep num={stats?.pipeline?.['Contacted'] || 0} label="Contacted" />
+        <PipelineStep num={stats?.todayFollowUps || 0} label="Follow Up" />
         <PipelineStep num={stats?.pipeline?.['Qualified Lead'] || 0} label="Qualified" />
-        <PipelineStep num={stats?.pipeline?.['Sample / Price Sent'] || 0} label="Sample/Price" />
-        <PipelineStep num={stats?.pipeline?.['Order Confirmed'] || 0} label="Order" />
-        <PipelineStep num={stats?.pipeline?.['Delivery Scheduled'] || 0} label="Scheduled" />
-        <PipelineStep num={stats?.pipeline?.['Delivered'] || 0} label="Delivered" />
-        <PipelineStep num={stats?.pipeline?.['Payment Pending'] || 0} label="Pending" />
-        <PipelineStep num={stats?.pipeline?.['Payment Received'] || 0} label="Paid" />
-        <PipelineStep num={stats?.pipeline?.['Active Customer / Repeat Order'] || 0} label="Active" />
+        <PipelineStep num={stats?.pipeline?.['Sample / Price Sent'] || 0} label="Samples" />
+        <PipelineStep num={stats?.pipeline?.['Order Confirmed'] || 0} label="Orders" />
+        <PipelineStep num={stats?.pipeline?.['Delivered'] || 0} label="Completed" />
         <PipelineStep num={stats?.pipeline?.['Lost Lead'] || 0} label="Lost" />
       </div>
     </section>
@@ -428,7 +516,7 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
           <Activity size={16} color="#9ca3af" />
         </div>
         <div className="activity-list">
-          {activityList.map(act => (
+          {activityList.slice(0, 5).map(act => (
             <ActivityItem 
               key={act._id} 
               user={act.user} 
@@ -508,7 +596,7 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
                   postcode={opp.postcode || '—'} 
                   status={opp.status}
                   bda={opp.leadOwner?.name || '—'} 
-                  bdm={opp.leadOwner?.role === 'BDM' ? opp.leadOwner.name : '—'} 
+                  bdm={['BDM', 'Admin'].includes(opp.leadOwner?.role) ? opp.leadOwner.name : '—'} 
                   callback={opp.nextFollowUpDate ? new Date(opp.nextFollowUpDate).toLocaleDateString() : '—'} 
                   provider={opp.topCompetitorBrandName || '—'} 
                   onClick={() => onLeadClick(opp)}
@@ -790,15 +878,19 @@ const CalendarView = ({ leads }) => {
   );
 };
 
-const UsersView = ({ users, onImport, onAdd, onEdit, onResetPassword }) => {
+const UsersView = ({ users, onImport, onAdd, onEdit, onResetPassword, onDeactivate, onDelete }) => {
   const [roleFilter, setRoleFilter] = useState('All Roles');
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
-  const roles = ['All Roles', 'BDA', 'BDM', 'Admin'];
+  const roles = ['All Roles', 'Agent', 'Manager'];
 
   const filteredUsers = roleFilter === 'All Roles' 
     ? users 
-    : users.filter(u => u.role.toUpperCase() === roleFilter.toUpperCase());
+    : users.filter(u => {
+        if (roleFilter === 'Agent') return u.role === 'BDA';
+        if (roleFilter === 'Manager') return u.role === 'BDM' || u.role === 'Admin';
+        return false;
+      });
 
   return (
     <div className="page-content">
@@ -848,13 +940,17 @@ const UsersView = ({ users, onImport, onAdd, onEdit, onResetPassword }) => {
         {filteredUsers.map(u => (
           <UserCard 
             key={u._id}
+            user={u}
             initials={u.name.split(' ').map(n => n[0]).join('').toUpperCase()}
             name={u.name}
             handle={u.handle || `@${u.name.toLowerCase().replace(' ', '.')}`}
             email={u.email}
-            role={u.role}
-            onEdit={() => onEdit(u)}
-            onReset={() => onResetPassword(u.name)}
+            role={u.isOwner ? 'Owner' : (u.role === 'BDA' ? 'Agent' : 'Manager')}
+            status={u.status}
+            onEdit={onEdit}
+            onReset={onResetPassword}
+            onDeactivate={onDeactivate}
+            onDelete={onDelete}
           />
         ))}
         {filteredUsers.length === 0 && <p style={{ color: '#9ca3af', padding: '2rem' }}>No users found for this role.</p>}
@@ -863,11 +959,14 @@ const UsersView = ({ users, onImport, onAdd, onEdit, onResetPassword }) => {
   );
 };
 
-const UserCard = ({ initials, name, handle, email, phone, role, onEdit, onReset }) => (
-  <div className="user-card">
+const UserCard = ({ user, initials, name, handle, email, phone, role, status, onEdit, onReset, onDeactivate, onDelete }) => (
+  <div className={`user-card ${status === 'inactive' ? 'inactive' : ''}`}>
     <div className="user-card-header">
       <div className="user-card-avatar">{initials}</div>
-      <span className={`role-badge ${role.toLowerCase()}`}>{role}</span>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {status === 'inactive' && <span className="status-tag inactive">Inactive</span>}
+        <span className={`role-badge ${role.toLowerCase()}`}>{role}</span>
+      </div>
     </div>
     <div className="user-card-body">
       <div className="user-card-name">{name}</div>
@@ -878,10 +977,16 @@ const UserCard = ({ initials, name, handle, email, phone, role, onEdit, onReset 
       </div>
     </div>
     <div className="user-card-footer">
-      <button className="user-action-btn" onClick={() => onEdit({ initials, name, handle, email, phone, role })}><Edit3 size={16} /></button>
-      <button className="user-action-btn"><UserX size={16} /></button>
-      <button className="user-action-btn" onClick={onReset}><Key size={16} /></button>
-      <button className="user-action-btn delete"><Trash2 size={16} /></button>
+      <button className="user-action-btn" title="Edit User" onClick={() => onEdit(user)}><Edit3 size={16} /></button>
+      <button 
+        className={`user-action-btn ${status === 'inactive' ? 'active' : ''}`} 
+        title={status === 'inactive' ? 'Activate User' : 'Deactivate User'} 
+        onClick={() => onDeactivate(user)}
+      >
+        <UserX size={16} />
+      </button>
+      <button className="user-action-btn" title="Reset Password" onClick={() => onReset(user)}><Key size={16} /></button>
+      <button className="user-action-btn delete" title="Delete User" onClick={() => onDelete(user)}><Trash2 size={16} /></button>
     </div>
   </div>
 );
@@ -1047,7 +1152,7 @@ const AccountRow = ({ business, contact, phone, postcode, status, volume, mid })
   </tr>
 );
 
-const AddOpportunityModal = ({ onClose, onSuccess }) => {
+const AddOpportunityModal = ({ onClose, onSuccess, authHeaders, users = [] }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     businessType: '',
@@ -1055,10 +1160,18 @@ const AddOpportunityModal = ({ onClose, onSuccess }) => {
     phoneWhatsApp: '',
     email: '',
     cityArea: '',
+    postcode: '',
+    leadOwner: '',
     interestedProducts: [],
     leadSource: '',
     notes: ''
   });
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Filter users who can be assigned as BDA (BDA or BDM role)
+  const assignableUsers = users.filter(u => u.role === 'BDA' || u.role === 'BDM');
 
   const businessTypes = [
     'Retail Shop', 'Cash & Carry', 'Wholesaler', 'Distributor', 
@@ -1068,37 +1181,67 @@ const AddOpportunityModal = ({ onClose, onSuccess }) => {
 
   const leadSources = ['Website', 'Cold Call', 'Sales Visit', 'Referral', 'Social Media', 'Other'];
 
-  const products = ['Evoca Cola', 'Evoca Orange', 'Evoca Lemon', 'Evoca Apple', 'Evoca Mango', 'Evoca Pomegranate'];
+  const products = ['COLA', 'STRAWBERRY', 'ORANGE', 'MANGO', 'COLA ZERO'];
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.companyName.trim()) newErrors.companyName = true;
+    if (!formData.businessType) newErrors.businessType = true;
+    if (!formData.cityArea.trim()) newErrors.cityArea = true;
+    if (!formData.postcode.trim()) newErrors.postcode = true;
+    
+    // Phone validation (at least 10 characters)
+    const phoneRegex = /^\+?[\d\s-]{10,}$/; 
+    if (!formData.phoneWhatsApp.trim() || !phoneRegex.test(formData.phoneWhatsApp)) newErrors.phoneWhatsApp = true;
+    
+    // Email validation (optional but must be valid if provided)
+    if (formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) newErrors.email = true;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSave = async () => {
-    if (!formData.companyName || !formData.businessType || !formData.phoneWhatsApp || !formData.cityArea) {
-      alert('Please fill in all required fields: Company Name, Business Type, Phone/WhatsApp, and City/Area.');
+    setGeneralError('');
+    if (!validate()) {
+      setGeneralError('Please fill in all required fields correctly.');
       return;
     }
 
+    setSaving(true);
     try {
       const res = await fetch('/api/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        await fetch('/api/activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user: 'System',
-            text: `New lead created: ${formData.companyName}`
-          })
-        });
         onSuccess();
         onClose();
       } else {
-        const err = await res.text();
-        alert('Error: ' + err);
+        const errorText = await res.text();
+        let errorMessage = 'Failed to create lead. Please try again.';
+        
+        if (errorText.includes('Duplicate lead found')) {
+          errorMessage = 'A lead with this Company Name or Phone number already exists.';
+        } else {
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+        }
+        setGeneralError(errorMessage);
       }
     } catch (e) {
       console.error('Error creating lead:', e);
+      setGeneralError('Connection error. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1119,33 +1262,87 @@ const AddOpportunityModal = ({ onClose, onSuccess }) => {
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="modal-body-scrollable">
-          <div className="form-grid">
-            <div className="form-field">
-              <label>Company / Shop Name *</label>
-              <input type="text" value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} />
+          {generalError && (
+            <div style={{ 
+              background: '#fef2f2', 
+              color: '#dc2626', 
+              padding: '0.75rem', 
+              borderRadius: '0.5rem', 
+              marginBottom: '1.25rem',
+              fontSize: '0.875rem',
+              border: '1px solid #fee2e2'
+            }}>
+              {generalError}
             </div>
-            <div className="form-field">
+          )}
+          <div className="form-grid">
+            <div className={`form-field ${errors.companyName ? 'error' : ''}`}>
+              <label>Company / Shop Name *</label>
+              <input 
+                type="text" 
+                value={formData.companyName} 
+                onChange={e => setFormData({...formData, companyName: e.target.value})} 
+              />
+            </div>
+            <div className={`form-field ${errors.businessType ? 'error' : ''}`}>
               <label>Business Type *</label>
-              <select className="form-select" value={formData.businessType} onChange={e => setFormData({...formData, businessType: e.target.value})}>
+              <select 
+                className="form-select"
+                value={formData.businessType} 
+                onChange={e => setFormData({...formData, businessType: e.target.value})}
+              >
                 <option value="">Select Type</option>
                 {businessTypes.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div className="form-field">
-              <label>Contact Person</label>
+              <label>Contact Name</label>
               <input type="text" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} />
             </div>
-            <div className="form-field">
+            <div className={`form-field ${errors.phoneWhatsApp ? 'error' : ''}`}>
               <label>Phone / WhatsApp *</label>
-              <input type="text" value={formData.phoneWhatsApp} onChange={e => setFormData({...formData, phoneWhatsApp: e.target.value})} />
+              <input 
+                type="text" 
+                value={formData.phoneWhatsApp} 
+                onChange={e => setFormData({...formData, phoneWhatsApp: e.target.value})} 
+              />
             </div>
-            <div className="form-field">
+            <div className={`form-field ${errors.email ? 'error' : ''}`}>
               <label>Email</label>
-              <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input 
+                type="email" 
+                value={formData.email} 
+                onChange={e => setFormData({...formData, email: e.target.value})} 
+              />
+            </div>
+            <div className={`form-field ${errors.cityArea ? 'error' : ''}`}>
+              <label>City / Area *</label>
+              <input 
+                type="text" 
+                value={formData.cityArea} 
+                onChange={e => setFormData({...formData, cityArea: e.target.value})} 
+              />
+            </div>
+            <div className={`form-field ${errors.postcode ? 'error' : ''}`}>
+              <label>Postcode *</label>
+              <input 
+                type="text" 
+                value={formData.postcode} 
+                onChange={e => setFormData({...formData, postcode: e.target.value})} 
+              />
             </div>
             <div className="form-field">
-              <label>City / Area *</label>
-              <input type="text" value={formData.cityArea} onChange={e => setFormData({...formData, cityArea: e.target.value})} />
+              <label>Assign to BDA</label>
+              <select 
+                className="form-select"
+                value={formData.leadOwner} 
+                onChange={e => setFormData({...formData, leadOwner: e.target.value})}
+              >
+                <option value="">Current User (Default)</option>
+                {assignableUsers.map(u => (
+                  <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
+                ))}
+              </select>
             </div>
             <div className="form-field full-width">
               <label>Interested Products</label>
@@ -1177,7 +1374,9 @@ const AddOpportunityModal = ({ onClose, onSuccess }) => {
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleSave}>Create Lead</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <RefreshCw size={16} className="animate-spin" /> : 'Create Lead'}
+          </button>
         </div>
       </div>
     </div>
@@ -1271,7 +1470,7 @@ const SearchPopup = ({ leads, users, onLeadClick, onClose }) => {
   );
 };
 
-const UserModal = ({ mode, user, onClose, onSuccess }) => {
+const UserModal = ({ mode, user, onClose, onSuccess, authHeaders, currentUser }) => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -1280,22 +1479,68 @@ const UserModal = ({ mode, user, onClose, onSuccess }) => {
     handle: user?.handle || '',
     phone: user?.phone || ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState('');
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = true;
+    if (!formData.handle.trim()) newErrors.handle = true;
+    if (mode === 'add' && (!formData.password || formData.password.length < 8)) newErrors.password = true;
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email)) newErrors.email = true;
+    
+    // Phone validation (at least 10 characters)
+    const phoneRegex = /^\+?[\d\s-]{10,}$/; 
+    if (!formData.phone.trim() || !phoneRegex.test(formData.phone)) newErrors.phone = true;
+    
+    if (!formData.role) newErrors.role = true;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSave = async () => {
+    setGeneralError('');
+    if (!validate()) {
+      setGeneralError('Please fill in all required fields correctly.');
+      return;
+    }
     try {
       const url = mode === 'add' ? '/api/users' : `/api/users/${user._id}`;
       const method = mode === 'add' ? 'POST' : 'PATCH';
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(formData)
       });
       if (res.ok) {
         onSuccess();
         onClose();
+      } else {
+        const errorText = await res.text();
+        let errorMessage = 'Failed to save user. Please try again.';
+        
+        if (errorText.includes('E11000') && errorText.includes('email')) {
+          errorMessage = 'A user with this email address already exists.';
+        } else if (errorText.includes('E11000')) {
+          errorMessage = 'A duplicate entry was found. Please check your data.';
+        } else {
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+        }
+        setGeneralError(errorMessage);
       }
     } catch (e) {
       console.error('Error saving user:', e);
+      setGeneralError('Connection error. Please check your network and try again.');
     }
   };
 
@@ -1309,35 +1554,61 @@ const UserModal = ({ mode, user, onClose, onSuccess }) => {
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="modal-body">
+          {generalError && (
+            <div style={{ 
+              background: '#fef2f2', 
+              color: '#dc2626', 
+              padding: '0.75rem', 
+              borderRadius: '8px', 
+              fontSize: '0.8125rem', 
+              fontWeight: 600,
+              marginBottom: '1.25rem',
+              border: '1px solid #fee2e2'
+            }}>
+              {generalError}
+            </div>
+          )}
           <div className="form-grid">
-            <div className="form-field">
+            <div className={`form-field ${errors.name ? 'error' : ''}`}>
               <label>Full Name *</label>
               <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" />
             </div>
-            <div className="form-field">
-              <label>Username / Handle</label>
+            <div className={`form-field ${errors.handle ? 'error' : ''}`}>
+              <label>Username / Handle *</label>
               <input type="text" value={formData.handle} onChange={e => setFormData({...formData, handle: e.target.value})} placeholder="@username" />
             </div>
             {mode === 'add' && (
-              <div className="form-field">
-                <label>Password *</label>
-                <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <div className={`form-field ${errors.password ? 'error' : ''}`}>
+                <label>Password * (min. 8 chars)</label>
+                <div className="password-input-wrapper">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    value={formData.password} 
+                    onChange={e => setFormData({...formData, password: e.target.value})} 
+                  />
+                  <button 
+                    type="button" 
+                    className="eye-button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             )}
-            <div className="form-field">
+            <div className={`form-field ${errors.role ? 'error' : ''}`}>
               <label>Role *</label>
               <select className="form-select" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
-                <option value="BDA">BDA</option>
-                <option value="Admin">Admin</option>
-                <option value="BDM">BDM</option>
+                <option value="BDA">BDA (Agent)</option>
+                {currentUser?.isOwner && <option value="BDM">BDM (Manager)</option>}
               </select>
             </div>
-            <div className="form-field">
+            <div className={`form-field ${errors.email ? 'error' : ''}`}>
               <label>Email *</label>
               <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
-            <div className="form-field">
-              <label>Phone</label>
+            <div className={`form-field ${errors.phone ? 'error' : ''}`}>
+              <label>Phone *</label>
               <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
             </div>
           </div>
@@ -1352,23 +1623,24 @@ const UserModal = ({ mode, user, onClose, onSuccess }) => {
   );
 };
 
-const ResetPasswordModal = ({ user, onClose }) => {
+const ResetPasswordModal = ({ user, onClose, authHeaders }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [resetting, setResetting] = useState(false);
-  
+  const [success, setSuccess] = useState(false);
+
   const handleReset = async () => {
-    if (newPassword.length < 6) return alert('Password must be at least 6 characters');
+    if (newPassword.length < 6) return;
     setResetting(true);
     try {
-      // Find user by name and update password (simplified for now)
-      const res = await fetch('/api/users/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: user, password: newPassword })
+      const res = await fetch(`/api/users/${user._id}`, {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify({ password: newPassword })
       });
       if (res.ok) {
-        onClose();
+        setSuccess(true);
+        setTimeout(() => onClose(), 2000);
       }
     } catch (e) {
       console.error(e);
@@ -1386,7 +1658,7 @@ const ResetPasswordModal = ({ user, onClose }) => {
         </div>
         <div className="modal-body" style={{ paddingTop: '0.5rem' }}>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-            Setting a new password for <span style={{ color: '#1e293b', fontWeight: 700 }}>{user}</span>.
+            Setting a new password for <span style={{ color: '#1e293b', fontWeight: 700 }}>{user?.name}</span>.
           </p>
           
           <div className="form-field">
@@ -1400,6 +1672,7 @@ const ResetPasswordModal = ({ user, onClose }) => {
                 onChange={e => setNewPassword(e.target.value)}
               />
               <button 
+                type="button"
                 className="show-password-btn" 
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
@@ -1412,6 +1685,24 @@ const ResetPasswordModal = ({ user, onClose }) => {
               </button>
             </div>
           </div>
+          {success && (
+            <div style={{ 
+              marginTop: '1rem', 
+              padding: '0.75rem', 
+              background: '#dcfce7', 
+              color: '#15803d', 
+              borderRadius: '8px',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              <Check size={16} /> Password reset successfully!
+            </div>
+          )}
         </div>
         <div className="modal-footer" style={{ borderTop: 'none', gap: '1rem', padding: '0 1.5rem 1.5rem' }}>
           <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
@@ -1429,9 +1720,10 @@ const ResetPasswordModal = ({ user, onClose }) => {
   );
 };
 
-const ImportLeadsModal = ({ onClose, type, onSuccess }) => {
+const ImportLeadsModal = ({ onClose, type, onSuccess, authHeaders }) => {
   const [file, setFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [error, setError] = useState(null);
 
   const templates = {
     leads: { name: 'Opportunities Template', file: '/leads_template.csv' },
@@ -1440,62 +1732,127 @@ const ImportLeadsModal = ({ onClose, type, onSuccess }) => {
   };
   const currentTemplate = templates[type] || templates.leads;
 
+  const businessTypeEnum = [
+    'Retail Shop', 'Cash & Carry', 'Wholesaler', 'Distributor', 
+    'Restaurant / Café', 'Supermarket', 'Online Store', 'Event Buyer', 
+    'Hotel', 'Catering Company', 'Gym / Sports Club', 'Other'
+  ];
+
+  const mapIndustryToBusinessType = (industry) => {
+    if (!industry) return 'Other';
+    const found = businessTypeEnum.find(b => 
+      b.toLowerCase().includes(industry.toLowerCase()) || 
+      industry.toLowerCase().includes(b.toLowerCase())
+    );
+    return found || 'Other';
+  };
+
   const handleImport = async () => {
     if (!file) return;
     setImporting(true);
+    setError(null);
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const text = e.target.result;
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      const data = lines.slice(1).filter(l => l.trim()).map(line => {
-        const values = line.split(',');
-        const obj = {};
-        headers.forEach((header, i) => {
-          obj[header] = values[i] ? values[i].trim() : '';
-        });
-        return obj;
-      });
-
       try {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) {
+          throw new Error('CSV file is empty or missing data rows');
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const data = lines.slice(1).map(line => {
+          const values = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim());
+          
+          const obj = {};
+          headers.forEach((header, i) => {
+            let val = values[i] || '';
+            if (val.startsWith('"') && val.endsWith('"')) {
+              val = val.substring(1, val.length - 1);
+            }
+            obj[header] = val;
+          });
+          return obj;
+        });
+
         const endpoint = type === 'users' ? '/api/users' : '/api/leads';
+        let successCount = 0;
+        let failCount = 0;
+
         for (const item of data) {
           const payload = type === 'users' ? {
-            name: item.Name,
-            email: item.Email,
-            role: item.Role || 'BDA',
-            handle: item.Handle,
-            password: 'password123' // Default password for imported users
+            name: item.full_name || item.name || '',
+            email: item.email || '',
+            role: item.role ? (item.role.toUpperCase() === 'ADMIN' ? 'Admin' : item.role.toUpperCase()) : 'BDA',
+            handle: item.username ? (item.username.startsWith('@') ? item.username : '@' + item.username) : '',
+            phone: item.phone || '',
+            password: item.password || 'password123'
           } : {
-            companyName: item.Business || item.CompanyName,
-            contactPerson: item.Contact || item.ContactPerson,
-            phoneWhatsApp: item.Phone || item.PhoneWhatsApp,
-            email: item.Email,
-            postcode: item.Postcode,
-            cityArea: item.CityArea || item.Area,
-            status: type === 'accounts' ? 'Active Customer / Repeat Order' : 'New Lead'
+            companyName: item.business_name || item.business || item.companyname || item.company_name,
+            contactPerson: item.contact_name || item.contact || item.contactperson || item.contact_person,
+            phoneWhatsApp: item.contact_phone || item.phone || item.phonewhatsapp || item.phone_whatsapp,
+            email: item.contact_email || item.email,
+            postcode: item.postcode,
+            cityArea: item.town_city || item.cityarea || item.area || 'Unknown',
+            businessType: mapIndustryToBusinessType(item.industry || item.businesstype || item.business_type),
+            status: type === 'accounts' ? (item.status || 'Active Customer / Repeat Order') : 'New Lead',
+            notes: item.notes || '',
+            topCompetitorBrandName: item.current_provider || item.provider || item.topcompetitorbrandname || ''
           };
 
-          await fetch(endpoint, {
+          // Basic validation for required fields
+          if (type !== 'users' && (!payload.companyName || !payload.phoneWhatsApp)) {
+            failCount++;
+            continue;
+          }
+
+          const res = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders,
             body: JSON.stringify(payload)
           });
+
+          if (res.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            const errData = await res.json().catch(() => ({}));
+            console.error('Failed to import row:', payload.companyName, errData.error || res.statusText);
+          }
         }
         
         await fetch('/api/activity', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders,
           body: JSON.stringify({
             user: 'System',
-            text: `Imported ${data.length} records into ${type}`
+            text: `Imported ${successCount} records into ${type}${failCount > 0 ? ` (${failCount} failed)` : ''}`
           })
         });
+
+        if (successCount === 0 && data.length > 0) {
+          throw new Error('Failed to import any records. Please check your CSV format.');
+        }
 
         onSuccess();
         onClose();
       } catch (err) {
         console.error('Import failed:', err);
+        setError(err.message);
       } finally {
         setImporting(false);
       }
@@ -1522,6 +1879,11 @@ const ImportLeadsModal = ({ onClose, type, onSuccess }) => {
             <h3>{file ? file.name : "Click or drag CSV file here"}</h3>
             <p>{file ? "File ready to import" : "Support for .csv"}</p>
           </div>
+          {error && (
+            <div style={{ color: '#ef4444', backgroundColor: '#fef2f2', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', border: '1px solid #fee2e2' }}>
+              {error}
+            </div>
+          )}
           <div className="template-box">
             <div className="template-info">
               <FileText size={20} color="#64748b" />
@@ -1591,7 +1953,7 @@ const OpportunityItem = ({ name, contact, status, onClick }) => (
   </div>
 );
 
-const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
+const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) => {
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
@@ -1602,17 +1964,44 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
     email: lead?.email || '',
     cityArea: lead?.cityArea || '',
     postcode: lead?.postcode || '',
-    businessType: lead?.businessType || ''
+    businessType: lead?.businessType || '',
+    leadOwner: lead?.leadOwner?._id || lead?.leadOwner || ''
   });
+  const [contactErrors, setContactErrors] = useState({});
+  const [generalContactError, setGeneralContactError] = useState('');
+
+  // Filter users who can be assigned as BDA (BDA or BDM role)
+  const assignableUsers = users.filter(u => u.role === 'BDA' || u.role === 'BDM');
 
   if (!lead) return null;
+
+  const validateContact = () => {
+    const newErrors = {};
+    if (!contactForm.companyName.trim()) newErrors.companyName = true;
+    if (!contactForm.businessType) newErrors.businessType = true;
+    if (!contactForm.cityArea.trim()) newErrors.cityArea = true;
+    if (!contactForm.postcode.trim()) newErrors.postcode = true;
+    
+    // Phone validation (at least 10 characters)
+    const phoneRegex = /^\+?[\d\s-]{10,}$/; 
+    if (!contactForm.phoneWhatsApp.trim() || !phoneRegex.test(contactForm.phoneWhatsApp)) newErrors.phoneWhatsApp = true;
+    
+    // Email validation (optional)
+    if (contactForm.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(contactForm.email)) newErrors.email = true;
+    }
+
+    setContactErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleUpdateStatus = async (newStatus, extraFields = {}) => {
     setUpdating(true);
     try {
       const res = await fetch(`/api/leads/${lead._id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ status: newStatus, ...extraFields })
       });
       if (res.ok) {
@@ -1628,7 +2017,10 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
   const handleDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete ${lead.companyName}?`)) return;
     try {
-      const res = await fetch(`/api/leads/${lead._id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/leads/${lead._id}`, { 
+        method: 'DELETE',
+        headers: authHeaders
+      });
       if (res.ok) {
         onSuccess();
         onBack();
@@ -1639,18 +2031,31 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
   };
 
   const handleSaveContact = async () => {
+    setGeneralContactError('');
+    if (!validateContact()) {
+      setGeneralContactError('Please fix the errors below.');
+      return;
+    }
+
+    setUpdating(true);
     try {
       const res = await fetch(`/api/leads/${lead._id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(contactForm)
       });
       if (res.ok) {
         setIsEditingContact(false);
         onSuccess();
+      } else {
+        const errorText = await res.text();
+        setGeneralContactError(errorText || 'Failed to update contact.');
       }
     } catch (e) {
       console.error(e);
+      setGeneralContactError('Connection error.');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -1659,9 +2064,9 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
     try {
       const res = await fetch('/api/activity', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
-          user: 'Umair',
+          user: 'User', // Will be handled by backend session or we can pass user.name
           text: note,
           lead: lead._id
         })
@@ -1726,24 +2131,43 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
             <div className="card-title-row">
               <h3>Company Info</h3>
               {isEditingContact ? (
-                <button className="btn-save-mini" onClick={handleSaveContact}>Save</button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <button className="btn-secondary" style={{ height: '32px', padding: '0 0.75rem', fontSize: '0.75rem' }} onClick={() => { setIsEditingContact(false); setContactErrors({}); setGeneralContactError(''); }}>Cancel</button>
+                  <button className="btn-save-mini" onClick={handleSaveContact} disabled={updating}>
+                    {updating ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
               ) : (
                 <Edit3 size={18} color="#6b7280" style={{ cursor: 'pointer' }} onClick={() => setIsEditingContact(true)} />
               )}
             </div>
+            {generalContactError && (
+              <div style={{ color: '#dc2626', background: '#fef2f2', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', marginBottom: '1rem', border: '1px solid #fee2e2' }}>
+                {generalContactError}
+              </div>
+            )}
             <div className="contact-info-list">
-              <div className="contact-info-item">
+              <div className={`contact-info-item ${contactErrors.companyName ? 'error' : ''}`}>
                 <Building size={18} />
                 {isEditingContact ? (
-                  <input type="text" value={contactForm.companyName} onChange={e => setContactForm({...contactForm, companyName: e.target.value})} />
+                  <input 
+                    type="text" 
+                    className={contactErrors.companyName ? 'error' : ''}
+                    value={contactForm.companyName} 
+                    onChange={e => setContactForm({...contactForm, companyName: e.target.value})} 
+                  />
                 ) : (
                   <span>{lead.companyName}</span>
                 )}
               </div>
-              <div className="contact-info-item">
+              <div className={`contact-info-item ${contactErrors.businessType ? 'error' : ''}`}>
                 <Target size={18} />
                 {isEditingContact ? (
-                  <select className="form-select" value={contactForm.businessType} onChange={e => setContactForm({...contactForm, businessType: e.target.value})}>
+                  <select 
+                    className={`form-select ${contactErrors.businessType ? 'error' : ''}`}
+                    value={contactForm.businessType} 
+                    onChange={e => setContactForm({...contactForm, businessType: e.target.value})}
+                  >
                     {['Retail Shop', 'Cash & Carry', 'Wholesaler', 'Distributor', 'Restaurant / Café', 'Supermarket', 'Online Store', 'Event Buyer', 'Hotel', 'Catering Company', 'Gym / Sports Club', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 ) : (
@@ -1758,31 +2182,70 @@ const LeadDetailsView = ({ lead, onBack, onSuccess }) => {
                   <span>{lead.contactPerson || 'No contact person'}</span>
                 )}
               </div>
-              <div className="contact-info-item">
+              <div className={`contact-info-item ${contactErrors.phoneWhatsApp ? 'error' : ''}`}>
                 <Phone size={18} />
                 {isEditingContact ? (
-                  <input type="text" value={contactForm.phoneWhatsApp} onChange={e => setContactForm({...contactForm, phoneWhatsApp: e.target.value})} />
+                  <input 
+                    type="text" 
+                    className={contactErrors.phoneWhatsApp ? 'error' : ''}
+                    value={contactForm.phoneWhatsApp} 
+                    onChange={e => setContactForm({...contactForm, phoneWhatsApp: e.target.value})} 
+                  />
                 ) : (
                   <span>{lead.phoneWhatsApp}</span>
                 )}
               </div>
-              <div className="contact-info-item">
+              <div className={`contact-info-item ${contactErrors.email ? 'error' : ''}`}>
                 <Mail size={18} />
                 {isEditingContact ? (
-                  <input type="email" value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
+                  <input 
+                    type="email" 
+                    className={contactErrors.email ? 'error' : ''}
+                    value={contactForm.email} 
+                    onChange={e => setContactForm({...contactForm, email: e.target.value})} 
+                  />
                 ) : (
                   <span>{lead.email || 'No email'}</span>
                 )}
               </div>
-              <div className="contact-info-item">
+              <div className={`contact-info-item ${contactErrors.cityArea ? 'error' : ''}`}>
                 <Building2 size={18} />
                 {isEditingContact ? (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input type="text" placeholder="City" value={contactForm.cityArea} onChange={e => setContactForm({...contactForm, cityArea: e.target.value})} />
-                    <input type="text" placeholder="Postcode" value={contactForm.postcode} onChange={e => setContactForm({...contactForm, postcode: e.target.value})} />
+                    <input 
+                      type="text" 
+                      className={contactErrors.cityArea ? 'error' : ''}
+                      placeholder="City" 
+                      value={contactForm.cityArea} 
+                      onChange={e => setContactForm({...contactForm, cityArea: e.target.value})} 
+                    />
+                    <input 
+                      type="text" 
+                      className={contactErrors.postcode ? 'error' : ''}
+                      placeholder="Postcode" 
+                      value={contactForm.postcode} 
+                      onChange={e => setContactForm({...contactForm, postcode: e.target.value})} 
+                    />
                   </div>
                 ) : (
                   <span>{lead.cityArea} {lead.postcode ? `(${lead.postcode})` : ''}</span>
+                )}
+              </div>
+              <div className="contact-info-item">
+                <UserCircle size={18} />
+                {isEditingContact ? (
+                  <select 
+                    className="form-select"
+                    value={contactForm.leadOwner} 
+                    onChange={e => setContactForm({...contactForm, leadOwner: e.target.value})}
+                  >
+                    <option value="">Current User (Default)</option>
+                    {assignableUsers.map(u => (
+                      <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>Assigned to: {lead.leadOwner?.name || 'Self'}</span>
                 )}
               </div>
             </div>
@@ -1936,16 +2399,19 @@ const ActivityItem = ({ user, text, time }) => (
   </div>
 );
 
-const NotificationsPopup = ({ activity, onClose, onNavigate }) => {
+const NotificationsPopup = ({ activity, onClose, onNavigate, onMarkAllRead }) => {
   return (
     <div className="notifications-popup" onClick={e => e.stopPropagation()}>
       <div className="notifications-header">
         <h3>Notifications</h3>
-        <button className="mark-read-btn">Mark all as read</button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button className="mark-read-btn" onClick={onMarkAllRead}>Mark all as read</button>
+          <button className="btn-icon-only" onClick={onClose}><X size={18} /></button>
+        </div>
       </div>
       <div className="notifications-list">
         {activity.slice(0, 5).map(n => (
-          <div key={n._id} className="notification-item">
+          <div key={n._id} className={`notification-item ${!n.isRead ? 'unread' : ''}`}>
             <div className="notification-avatar">
               {n.user === 'System' ? <Activity size={14} /> : (n.user ? n.user[0] : '?')}
             </div>
@@ -1953,8 +2419,9 @@ const NotificationsPopup = ({ activity, onClose, onNavigate }) => {
               <div className="notification-text">
                 <span className="user-name">{n.user}</span> {n.text}
               </div>
-              <div className="notification-time">{new Date(n.time).toLocaleTimeString()}</div>
+              <div className="notification-time">{new Date(n.createdAt).toLocaleTimeString()}</div>
             </div>
+            {!n.isRead && <div className="unread-dot"></div>}
           </div>
         ))}
         {activity.length === 0 && <p style={{ padding: '1rem', color: '#9ca3af' }}>No recent activity.</p>}
@@ -1969,7 +2436,7 @@ const NotificationsPopup = ({ activity, onClose, onNavigate }) => {
   );
 };
 
-const NotificationsView = ({ activity }) => {
+const NotificationsView = ({ activity, onMarkAllRead, onDelete }) => {
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1977,12 +2444,12 @@ const NotificationsView = ({ activity }) => {
           <h1>Notifications</h1>
           <p>Stay updated with the latest CRM activity</p>
         </div>
-        <button className="btn-secondary">Mark all as read</button>
+        <button className="btn-secondary" onClick={onMarkAllRead}>Mark all as read</button>
       </header>
 
       <div className="notifications-page-list">
         {activity.map(n => (
-          <div key={n._id} className="notification-page-item">
+          <div key={n._id} className={`notification-page-item ${!n.isRead ? 'unread' : ''}`}>
             <div className="notif-left">
               <div className="notif-avatar-large">
                 {n.user === 'System' ? <Activity size={20} /> : (n.user ? n.user[0] : '?')}
@@ -1993,11 +2460,17 @@ const NotificationsView = ({ activity }) => {
                   <span className="notif-type-tag">Activity</span>
                 </div>
                 <div className="notif-text">{n.text}</div>
-                <div className="notif-time">{new Date(n.time).toLocaleString()}</div>
+                <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
               </div>
             </div>
             <div className="notif-actions">
-              <button className="btn-icon-only"><MoreHorizontal size={18} /></button>
+              <button 
+                className="btn-icon-only" 
+                title="Delete Notification"
+                onClick={() => onDelete(n._id)}
+              >
+                <Trash2 size={18} />
+              </button>
             </div>
           </div>
         ))}
@@ -2005,6 +2478,155 @@ const NotificationsView = ({ activity }) => {
       </div>
     </div>
   );
-};
+}
 
 export default App;
+
+const LoginPage = ({ onLogin, onSwitchToSignup }) => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (res.ok) onLogin(data);
+      else setError(data.error || 'Login failed');
+    } catch (e) {
+      setError('Connection error: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1>Welcome Back</h1>
+          <p>Login to your CRM workspace</p>
+        </div>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-field">
+            <label>Email Address</label>
+            <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@example.com" />
+          </div>
+          <div className="form-field">
+            <label>Password</label>
+            <div className="password-input-wrapper">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                required 
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})} 
+                placeholder="••••••••" 
+              />
+              <button 
+                type="button" 
+                className="eye-button" 
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          {error && <div className="auth-error-box">{error}</div>}
+          <button type="submit" className="btn-primary auth-submit" disabled={loading}>
+            {loading ? 'Logging in...' : 'Sign In'}
+          </button>
+        </form>
+        <div className="auth-footer">
+          Don't have an account? <button className="auth-link" onClick={onSwitchToSignup}>Create a workspace</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SignupPage = ({ onSignup, onSwitchToLogin }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', workspaceName: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (res.ok) onSignup(data);
+      else setError(data.error || 'Signup failed');
+    } catch (e) {
+      setError('Connection error: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1>Create Workspace</h1>
+          <p>Start managing your organization</p>
+        </div>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-field">
+            <label>Full Name</label>
+            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="John Doe" />
+          </div>
+          <div className="form-field">
+            <label>Workspace / Company Name</label>
+            <input type="text" required value={formData.workspaceName} onChange={e => setFormData({...formData, workspaceName: e.target.value})} placeholder="Acme Inc." />
+          </div>
+          <div className="form-field">
+            <label>Email Address</label>
+            <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@example.com" />
+          </div>
+          <div className="form-field">
+            <label>Password (min. 8 chars)</label>
+            <div className="password-input-wrapper">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                required 
+                minLength="8" 
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})} 
+                placeholder="••••••••" 
+              />
+              <button 
+                type="button" 
+                className="eye-button" 
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          {error && <div className="auth-error-box">{error}</div>}
+          <button type="submit" className="btn-primary auth-submit" disabled={loading}>
+            {loading ? 'Creating...' : 'Create Account'}
+          </button>
+        </form>
+        <div className="auth-footer">
+          Already have a workspace? <button className="auth-link" onClick={onSwitchToLogin}>Sign in</button>
+        </div>
+      </div>
+    </div>
+  );
+};

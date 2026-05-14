@@ -74,7 +74,8 @@ const leadSchema = new mongoose.Schema({
   reasonForDecision: { type: String },
 
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', required: true }
 });
 
 leadSchema.pre('save', function(next) {

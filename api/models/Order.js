@@ -18,7 +18,8 @@ const orderSchema = new mongoose.Schema({
   specialInstructions: { type: String },
   orderStatus: { type: String, default: 'Confirmed' },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', required: true }
 });
 
 orderSchema.pre('save', function(next) {
