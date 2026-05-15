@@ -386,9 +386,9 @@ app.get('/api/stats', auth, async (req, res) => {
       return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
     }).reduce((sum, o) => sum + (o.totalOrderValue || 0), 0);
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const todayFollowUps = leads.filter(l => l.nextFollowUpDate && new Date(l.nextFollowUpDate) <= today).length;
+    const endOfToday = new Date();
+    endOfToday.setHours(23,59,59,999);
+    const todayFollowUps = leads.filter(l => l.nextFollowUpDate && new Date(l.nextFollowUpDate) <= endOfToday).length;
     
     res.send({
       totalLeads: leads.length,

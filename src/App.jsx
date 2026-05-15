@@ -17,7 +17,7 @@ function App() {
   const [workspace, setWorkspace] = useState(() => JSON.parse(localStorage.getItem('workspace')));
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
 
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'Dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,11 +32,13 @@ function App() {
   const [opportunitiesViewMode, setOpportunitiesViewMode] = useState('list');
   const [accountsViewMode, setAccountsViewMode] = useState('list');
   const [selectedLead, setSelectedLead] = useState(null);
+  const [persistedLeadId, setPersistedLeadId] = useState(() => localStorage.getItem('selectedLeadId'));
   const [importType, setImportType] = useState('leads');
   const [leads, setLeads] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [activityList, setActivityList] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [returnTab, setReturnTab] = useState(() => localStorage.getItem('returnTab') || 'Dashboard');
   const [loading, setLoading] = useState(true);
 
   const authHeaders = {
@@ -60,6 +62,9 @@ function App() {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('workspace');
+    localStorage.removeItem('activeTab');
+    localStorage.removeItem('selectedLeadId');
+    localStorage.removeItem('returnTab');
   };
 
   const fetchData = async () => {
@@ -80,6 +85,14 @@ function App() {
       setUsersList(Array.isArray(usersData) ? usersData : []);
       setActivityList(Array.isArray(activityData) ? activityData : []);
       setDashboardStats(statsData);
+      
+      // Update selectedLead if it's currently being viewed or persisted
+      const currentLeadId = selectedLead?._id || persistedLeadId;
+      if (currentLeadId) {
+        const updatedLead = leadsData.find(l => l._id === currentLeadId);
+        if (updatedLead) setSelectedLead(updatedLead);
+      }
+      
       setLoading(false);
     } catch (e) {
       console.error('Error fetching data:', e);
@@ -88,8 +101,30 @@ function App() {
   };
 
   React.useEffect(() => {
-    if (token) fetchData();
+    if (token) {
+      fetchData();
+      const interval = setInterval(fetchData, 30000); // Poll every 30 seconds
+      return () => clearInterval(interval);
+    }
   }, [token]);
+
+  React.useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  React.useEffect(() => {
+    if (selectedLead) {
+      localStorage.setItem('selectedLeadId', selectedLead._id);
+      setPersistedLeadId(selectedLead._id);
+    } else {
+      localStorage.removeItem('selectedLeadId');
+      setPersistedLeadId(null);
+    }
+  }, [selectedLead]);
+
+  React.useEffect(() => {
+    localStorage.setItem('returnTab', returnTab);
+  }, [returnTab]);
 
   const handleLeadAction = async (action, data) => {
     // Placeholder for global actions like refresh after edit/add
@@ -299,7 +334,7 @@ function App() {
               onClick={() => setShowNotifications(!showNotifications)}
             >
               <Bell size={18} />
-              <div className="notification-dot"></div>
+              {activityList.some(a => !a.isRead) && <div className="notification-dot"></div>}
             </button>
             {showNotifications && (
               <>
@@ -328,6 +363,7 @@ function App() {
                 activityList={activityList}
                 onNavigate={setActiveTab} 
                 onLeadClick={(lead) => {
+                  setReturnTab('Dashboard');
                   setSelectedLead(lead);
                   setActiveTab('LeadDetails');
                 }}
@@ -336,7 +372,7 @@ function App() {
             {activeTab === 'LeadDetails' && (
               <LeadDetailsView 
                 lead={selectedLead} 
-                onBack={() => setActiveTab('Dashboard')} 
+                onBack={() => setActiveTab(returnTab)} 
                 onSuccess={fetchData}
                 authHeaders={authHeaders}
                 users={usersList}
@@ -350,6 +386,7 @@ function App() {
                 viewMode={opportunitiesViewMode}
                 setViewMode={setOpportunitiesViewMode}
                 onLeadClick={(lead) => {
+                  setReturnTab('Opportunities');
                   setSelectedLead(lead);
                   setActiveTab('LeadDetails');
                 }}
@@ -362,6 +399,7 @@ function App() {
                 viewMode={accountsViewMode}
                 setViewMode={setAccountsViewMode}
                 onLeadClick={(lead) => {
+                  setReturnTab('Accounts');
                   setSelectedLead(lead);
                   setActiveTab('LeadDetails');
                 }}
@@ -477,16 +515,20 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
         <div className="pipeline-title">Pipeline</div>
         <div style={{ color: '#9ca3af' }}><BarChart3 size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Lead Journey</div>
       </div>
-      <div className="pipeline-stepper">
-        <PipelineStep num={stats?.totalLeads || 0} label="Total" />
-        <PipelineStep num={stats?.pipeline?.['New Lead'] || 0} label="New" />
-        <PipelineStep num={stats?.pipeline?.['Contacted'] || 0} label="Contacted" />
-        <PipelineStep num={stats?.todayFollowUps || 0} label="Follow Up" />
-        <PipelineStep num={stats?.pipeline?.['Qualified Lead'] || 0} label="Qualified" />
-        <PipelineStep num={stats?.pipeline?.['Sample / Price Sent'] || 0} label="Samples" />
-        <PipelineStep num={stats?.pipeline?.['Order Confirmed'] || 0} label="Orders" />
-        <PipelineStep num={stats?.pipeline?.['Delivered'] || 0} label="Completed" />
-        <PipelineStep num={stats?.pipeline?.['Lost Lead'] || 0} label="Lost" />
+      <div className="pipeline-stepper" style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+        <div style={{ display: 'flex', minWidth: '1000px', justifyContent: 'space-between' }}>
+          <PipelineStep num={stats?.pipeline?.['New Lead'] || 0} label="New" />
+          <PipelineStep num={stats?.pipeline?.['Contacted'] || 0} label="Contacted" />
+          <PipelineStep num={stats?.pipeline?.['Qualified Lead'] || 0} label="Qualified" />
+          <PipelineStep num={stats?.pipeline?.['Sample / Price Sent'] || 0} label="Samples" />
+          <PipelineStep num={stats?.pipeline?.['Order Confirmed'] || 0} label="Orders" />
+          <PipelineStep num={stats?.pipeline?.['Delivery Scheduled'] || 0} label="Scheduled" />
+          <PipelineStep num={stats?.pipeline?.['Delivered'] || 0} label="Delivered" />
+          <PipelineStep num={stats?.pipeline?.['Payment Pending'] || 0} label="Pending" />
+          <PipelineStep num={stats?.pipeline?.['Payment Received'] || 0} label="Paid" />
+          <PipelineStep num={stats?.pipeline?.['Active Customer / Repeat Order'] || 0} label="Repeat" />
+          <PipelineStep num={stats?.pipeline?.['Lost Lead'] || 0} label="Lost" />
+        </div>
       </div>
     </section>
 
@@ -622,7 +664,7 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
                     <span>{opp.postcode}</span>
                   </div>
                 </div>
-                <span className={`status-badge-${(opp.status || 'new').toLowerCase().replace(/\s+/g, '')}`}>{opp.status || 'New Lead'}</span>
+                <span className={`status-badge-${(opp.status || 'new').toLowerCase().replace(/[\s/]+/g, '')}`}>{opp.status || 'New Lead'}</span>
               </div>
               <div className="grid-card-content">
                 <div className="grid-info-row">
@@ -1921,7 +1963,7 @@ const TableRow = ({ business, contact, phone, postcode, status, bda, bdm, callba
       {phone} {phone !== '—' && <Copy size={12} className="copy-icon" />}
     </td>
     <td>{postcode}</td>
-    <td><span className={`status-badge-${(status || 'new').toLowerCase().replace(/\s+/g, '')}`}>{status || 'New Lead'}</span></td>
+    <td><span className={`status-badge-${(status || 'new').toLowerCase().replace(/[\s/]+/g, '')}`}>{status || 'New Lead'}</span></td>
     <td className="team-cell">{bda}</td>
     <td className="team-cell">{bdm}</td>
     <td>{callback}</td>
@@ -1937,9 +1979,9 @@ const TeamMember = ({ name }) => (
 );
 
 const PipelineStep = ({ num, label }) => (
-  <div className="pipeline-step">
-    <div className="pipeline-num">{num}</div>
-    <div className="pipeline-label">{label}</div>
+  <div className="pipeline-step-v2">
+    <div className="pipeline-num-v2">{num}</div>
+    <div className="pipeline-label-v2">{label}</div>
   </div>
 );
 
@@ -1949,7 +1991,7 @@ const OpportunityItem = ({ name, contact, status, onClick }) => (
       <div className="opp-business-name">{name}</div>
       <div className="opp-contact-name">{contact}</div>
     </div>
-    <div className={`status-badge-${(status || 'new').toLowerCase().replace(/\s+/g, '')}`}>{status || 'New Lead'}</div>
+    <div className={`status-badge-${(status || 'new').toLowerCase().replace(/[\s/]+/g, '')}`}>{status || 'New Lead'}</div>
   </div>
 );
 
@@ -2091,8 +2133,8 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
     <div className="page-content">
       <header className="lead-details-header">
         <div className="lead-header-left">
-          <button className="back-btn" onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
-            <ChevronLeft size={24} color="#111827" />
+          <button className="back-btn-circle" onClick={onBack}>
+            <ChevronLeft size={20} />
           </button>
           <div className="lead-title-group">
             <h2>{lead.companyName}</h2>
@@ -2100,26 +2142,26 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
           </div>
         </div>
         <div className="lead-header-right">
-          <span className={`status-badge-${(lead.status || 'new').toLowerCase().replace(/\s+/g, '')}`} style={{ padding: '6px 16px', borderRadius: '8px' }}>
+          <span className={`status-badge-${(lead.status || 'new').toLowerCase().replace(/[\s/]+/g, '')}`} style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800 }}>
             {lead.status || 'New Lead'}
           </span>
-          <button className="trash-btn" onClick={handleDelete}><Trash2 size={20} /></button>
+          <button className="trash-btn" onClick={handleDelete} title="Delete Lead"><Trash2 size={20} /></button>
         </div>
       </header>
 
-      <div className="lead-stepper-container" style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
+      <div className="lead-stepper-container" style={{ overflowX: 'auto', paddingBottom: '1.5rem', marginBottom: '1rem' }}>
         <div className="lead-stepper" style={{ minWidth: '1200px' }}>
           <div className="step-line"></div>
           <div className="step-line-active" style={{ width: `${(currentIndex / (statuses.length - 1)) * 100}%` }}></div>
           {statuses.map((s, i) => (
             <div 
               key={s} 
-              className={`step-item ${i <= currentIndex ? 'active' : ''}`}
+              className={`step-item ${i <= currentIndex ? 'active' : ''} ${lead.status === 'Lost Lead' && i === 10 ? 'lost' : ''}`}
               onClick={() => handleUpdateStatus(s)}
               style={{ cursor: 'pointer' }}
             >
               <div className="step-dot">{i + 1}</div>
-              <span className="step-label" style={{ fontSize: '10px' }}>{s}</span>
+              <span className="step-label">{s}</span>
             </div>
           ))}
         </div>
@@ -2252,8 +2294,11 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
           </div>
 
           <div className="details-card" style={{ marginTop: '1.5rem' }}>
-            <div className="card-title-row">
-              <h3>Workflow Stages</h3>
+            <div className="card-title-row" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} color="#2563eb" />
+                Workflow Stages
+              </h3>
             </div>
             
             {/* Stage: Contacted */}
@@ -2309,14 +2354,45 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
               </div>
             )}
 
-            {lead.response === 'Not Interested' && (
+            {lead.response === 'Not Interested' && lead.status !== 'Lost Lead' && (
               <div className="workflow-section">
-                <h4>2. Lost Reason</h4>
+                <h4>2. Close Opportunity</h4>
                 <div className="form-field">
-                  <label>Reason</label>
+                  <label>Mark as Lost?</label>
+                  <button className="btn-secondary" style={{ color: '#ef4444', borderColor: '#fee2e2', width: '100%' }} onClick={() => handleUpdateStatus('Lost Lead')}>
+                    Move to Lost Lead
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {lead.status === 'Lost Lead' && (
+              <div className="workflow-section" style={{ borderColor: '#fee2e2', background: '#fffafb' }}>
+                <h4 style={{ color: '#dc2626' }}><X size={16} /> Lost Lead Reason</h4>
+                <div className="form-field">
+                  <label>Why was this lead lost?</label>
                   <select value={lead.lostReason || ''} onChange={e => handleUpdateStatus('Lost Lead', { lostReason: e.target.value })}>
+                    <option value="">Select Reason</option>
                     {['Already has supplier', 'Delivery area issue', 'Low demand', 'Competitor gave better deal', 'Price issue', 'Wrong contact details', 'Not selling soft drinks', 'Not interested at the moment', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
+                </div>
+              </div>
+            )}
+
+            {currentIndex >= 4 && currentIndex <= 9 && (
+              <div className="workflow-section">
+                <h4>{currentIndex >= 7 ? '4. Payment & Completion' : '3. Order & Delivery'}</h4>
+                <div className="form-grid-mini">
+                  <div className="form-field">
+                    <label>Order Status</label>
+                    <span className="status-tag active" style={{ display: 'inline-block', marginTop: '8px' }}>{lead.status}</span>
+                  </div>
+                  {currentIndex >= 5 && (
+                    <div className="form-field">
+                      <label>Delivery Date</label>
+                      <input type="date" value={lead.deliveryDate ? new Date(lead.deliveryDate).toISOString().split('T')[0] : ''} onChange={e => handleUpdateStatus(lead.status, { deliveryDate: e.target.value })} />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
