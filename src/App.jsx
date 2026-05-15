@@ -405,7 +405,16 @@ function App() {
                 }}
               />
             )}
-            {activeTab === 'Contact' && <ContactView leads={leads} />}
+            {activeTab === 'Contact' && (
+              <ContactView 
+                leads={leads} 
+                onLeadClick={(lead) => {
+                  setReturnTab('Contact');
+                  setSelectedLead(lead);
+                  setActiveTab('LeadDetails');
+                }} 
+              />
+            )}
             {activeTab === 'Calendar' && <CalendarView leads={leads} />}
             {activeTab === 'Users' && (user?.role === 'BDM' || user?.role === 'Admin' || user?.isOwner) && (
               <UsersView 
@@ -709,7 +718,7 @@ const AccountsView = ({ leads, onImport, viewMode, setViewMode, onLeadClick }) =
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Accounts</h1>
-          <p>{leads.filter(l => l.status === 'Transacting').length} transacting, {leads.filter(l => l.status === 'Approved').length} approved, {leads.length} total</p>
+          <p>{leads.filter(l => l.status === 'Active Customer / Repeat Order').length} repeat customers, {leads.length} total active accounts</p>
         </div>
         <button className="btn-secondary" onClick={onImport}><Upload size={16} /> Import CSV</button>
       </header>
@@ -721,7 +730,7 @@ const AccountsView = ({ leads, onImport, viewMode, setViewMode, onLeadClick }) =
         </div>
 
         <div className="tab-toggle">
-          {['All', 'Approved', 'Delivered', 'Transacting', 'Non-Trans.'].map(tab => (
+          {['All', 'Orders', 'Delivery', 'Payment', 'Repeat'].map(tab => (
             <button 
               key={tab} 
               className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
@@ -754,84 +763,90 @@ const AccountsView = ({ leads, onImport, viewMode, setViewMode, onLeadClick }) =
         </div>
       </div>
 
-      {viewMode === 'list' ? (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Business</th>
-                <th>Contact</th>
-                <th>Phone</th>
-                <th>Postcode</th>
-                <th>Status</th>
-                <th>Volume</th>
-                <th>MID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map(acc => (
-                <AccountRow 
-                  key={acc._id}
-                  business={acc.business} 
-                  contact={acc.contactName} 
-                  phone={acc.phone} 
-                  postcode={acc.postcode} 
-                  status={acc.status} 
-                  volume={acc.volume} 
-                  mid={acc.mid} 
-                  onClick={() => onLeadClick(acc)}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="accounts-grid-container">
-          {leads.map(acc => (
-            <div key={acc._id} className="account-grid-card" onClick={() => onLeadClick(acc)} style={{ cursor: 'pointer' }}>
-              <div className="account-grid-header">
-                <div className="account-card-main">
-                  <h3 className="account-card-title">{acc.business}</h3>
-                  <div className="account-card-contact">{acc.contactName}</div>
-                </div>
-                <span className={`status-badge ${acc.status.toLowerCase().replace('-', '')}`}>{acc.status}</span>
-              </div>
-              <div className="account-card-body">
-                <div className="account-info-row">
-                  <Phone size={14} className="grid-icon" />
-                  <span>{acc.phone}</span>
-                </div>
-                <div className="account-info-row">
-                  <Building size={14} className="grid-icon" />
-                  <span>{acc.postcode}</span>
-                </div>
-                <div className="account-stats-box">
-                  <div className="account-stat-item">
-                    <span className="account-stat-label">Volume</span>
-                    <span className="account-stat-value">{acc.volume}</span>
+      {(() => {
+        const filteredLeads = leads.filter(l => {
+          if (activeTab === 'All') return true;
+          if (activeTab === 'Orders') return l.status === 'Order Confirmed';
+          if (activeTab === 'Delivery') return ['Delivery Scheduled', 'Delivered'].includes(l.status);
+          if (activeTab === 'Payment') return ['Payment Pending', 'Payment Received'].includes(l.status);
+          if (activeTab === 'Repeat') return l.status === 'Active Customer / Repeat Order';
+          return true;
+        });
+
+        return viewMode === 'list' ? (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Business</th>
+                  <th>Contact</th>
+                  <th>Phone</th>
+                  <th>Postcode</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeads.map(acc => (
+                  <AccountRow 
+                    key={acc._id}
+                    business={acc.companyName} 
+                    contact={acc.contactPerson} 
+                    phone={acc.phoneWhatsApp} 
+                    postcode={acc.postcode} 
+                    status={acc.status} 
+                    onClick={() => onLeadClick(acc)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="accounts-grid-container">
+            {filteredLeads.map(acc => (
+              <div key={acc._id} className="account-grid-card" onClick={() => onLeadClick(acc)} style={{ cursor: 'pointer' }}>
+                <div className="account-grid-header">
+                  <div className="account-card-main">
+                    <h3 className="account-card-title">{acc.companyName}</h3>
+                    <div className="account-card-contact">{acc.contactPerson}</div>
                   </div>
-                  <div className="account-stat-item">
-                    <span className="account-stat-label">MID</span>
-                    <span className="account-stat-value">{acc.mid}</span>
+                  <span className={`status-badge-${acc.status.toLowerCase().replace(/[\s/]+/g, '')}`}>{acc.status}</span>
+                </div>
+                <div className="account-card-body">
+                  <div className="account-info-row">
+                    <Phone size={14} className="grid-icon" />
+                    <span>{acc.phoneWhatsApp}</span>
+                  </div>
+                  <div className="account-info-row">
+                    <Building size={14} className="grid-icon" />
+                    <span>{acc.postcode}</span>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 };
 
-const ContactView = ({ leads }) => {
+const ContactView = ({ leads, onLeadClick }) => {
   const [activeTab, setActiveTab] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredContacts = activeTab === 'All' 
-    ? leads 
-    : activeTab === 'Opportunities' 
-      ? leads.filter(l => ['New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 'Lost Lead'].includes(l.status) || !l.status)
-      : leads.filter(l => ['Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order'].includes(l.status));
+  const accountStatuses = ['Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order'];
+
+  const filteredContacts = leads.filter(l => {
+    const isOpportunity = !accountStatuses.includes(l.status);
+    const isAccount = accountStatuses.includes(l.status);
+    if (activeTab === 'Opportunities' && !isOpportunity) return false;
+    if (activeTab === 'Accounts' && !isAccount) return false;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (l.companyName?.toLowerCase().includes(query) || l.contactPerson?.toLowerCase().includes(query) || l.phoneWhatsApp?.toLowerCase().includes(query));
+    }
+    return true;
+  });
 
   return (
     <div className="page-content">
@@ -843,7 +858,12 @@ const ContactView = ({ leads }) => {
       <div className="filters-bar">
         <div className="filter-search">
           <Search size={16} color="#94a3b8" />
-          <input type="text" placeholder="Search contacts..." />
+          <input 
+            type="text" 
+            placeholder="Search contacts..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
         <div className="tab-toggle">
@@ -863,11 +883,12 @@ const ContactView = ({ leads }) => {
         {filteredContacts.map(l => (
           <ContactCard 
             key={l._id}
-            initial={l.contactName ? l.contactName[0] : '?'} 
-            name={l.contactName} 
-            business={l.business} 
-            phone={l.phone} 
-            type={['Approved', 'Delivered', 'Transacting', 'Non-Trans'].includes(l.status) ? 'Account' : 'Opportunity'} 
+            initial={l.contactPerson ? l.contactPerson[0] : '?'} 
+            name={l.contactPerson || 'Unknown Contact'} 
+            business={l.companyName} 
+            phone={l.phoneWhatsApp} 
+            type={accountStatuses.includes(l.status) ? 'Account' : 'Opportunity'} 
+            onClick={() => onLeadClick(l)}
           />
         ))}
         {filteredContacts.length === 0 && <p style={{ color: '#9ca3af' }}>No contacts found.</p>}
