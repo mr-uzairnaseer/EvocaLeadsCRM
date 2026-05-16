@@ -375,6 +375,7 @@ function App() {
                 lead={selectedLead} 
                 onBack={() => setActiveTab(returnTab)} 
                 onSuccess={fetchData}
+                onNavigateToOpportunities={() => setActiveTab('Opportunities')}
                 authHeaders={authHeaders}
                 users={usersList}
                 activityList={activityList}
@@ -2123,11 +2124,14 @@ const OpportunityItem = ({ name, contact, status, onClick }) => (
   </div>
 );
 
-const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], activityList = [] }) => {
+const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, authHeaders, users = [], activityList = [] }) => {
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [isEditingWorkflow, setIsEditingWorkflow] = useState(false);
+  const [showWorkflowPopup, setShowWorkflowPopup] = useState(false);
+  const [popupMode, setPopupMode] = useState('');
+  const [popupError, setPopupError] = useState('');
   const [contactForm, setContactForm] = useState({
     companyName: lead?.companyName || '',
     contactPerson: lead?.contactPerson || '',
@@ -2172,23 +2176,68 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], act
     setWorkflowForm(prev => ({ ...prev, ...updates }));
   };
 
-  const saveWorkflowState = async () => {
+  const handleResponseSelection = (value) => {
+    handleUpdateWorkflow({ response: value });
+    if (['Interested', 'No Response', 'Not Interested'].includes(value)) {
+      setPopupMode(value);
+      setPopupError('');
+      setShowWorkflowPopup(true);
+    } else {
+      setShowWorkflowPopup(false);
+      setPopupMode('');
+      setPopupError('');
+    }
+  };
+
+  const handleCloseWorkflowPopup = () => {
+    setShowWorkflowPopup(false);
+    setPopupError('');
+    setPopupMode('');
+  };
+
+  const saveWorkflowState = async ({ extraPatch = {}, afterSave = () => {} } = {}) => {
     setUpdating(true);
     try {
       const res = await fetch(`/api/leads/${lead._id}`, {
         method: 'PATCH',
         headers: authHeaders,
-        body: JSON.stringify(workflowForm)
+        body: JSON.stringify({ ...workflowForm, ...extraPatch })
       });
       if (res.ok) {
         setIsEditingWorkflow(false);
         onSuccess();
+        afterSave();
+        return true;
       }
     } catch (e) {
       console.error(e);
     } finally {
       setUpdating(false);
     }
+    return false;
+  };
+
+  const handleSaveWorkflowPopup = async () => {
+    setPopupError('');
+
+    if (popupMode === 'No Response' && !workflowForm.nextFollowUpDate) {
+      setPopupError('Please select a next follow-up date.');
+      return;
+    }
+
+    if (popupMode === 'Not Interested' && !workflowForm.lostReason) {
+      setPopupError('Please select a reason for not interested.');
+      return;
+    }
+
+    const shouldClose = async () => {
+      setShowWorkflowPopup(false);
+      setPopupMode('');
+      if (onNavigateToOpportunities) onNavigateToOpportunities();
+    };
+
+    const extraPatch = popupMode === 'Not Interested' ? { status: 'Lost Lead' } : {};
+    await saveWorkflowState({ extraPatch, afterSave: shouldClose });
   };
 
   React.useEffect(() => {
@@ -2539,19 +2588,15 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], act
                 </div>
                 <div className="form-field">
                   <label>Response</label>
-                  <select value={workflowForm.response} onChange={e => handleUpdateWorkflow({ response: e.target.value })}>
+                  <select value={workflowForm.response} onChange={e => handleResponseSelection(e.target.value)}>
                     <option value="">Select Response</option>
                     {['Interested', 'No Response', 'Not Interested'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
-                <div className="form-field">
-                  <label>Next Follow Up</label>
-                  <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
-                </div>
               </div>
             </div>
 
-            {(currentIndex >= 2 || workflowForm.response === 'Interested') && (
+            {(currentIndex >= 2 || workflowForm.response === 'Interested') && !showWorkflowPopup && (
               <div className="workflow-section">
                 <h4>2. Qualification</h4>
                 <div className="form-grid-mini">
@@ -2635,7 +2680,7 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], act
               </div>
             )}
 
-            {(currentIndex >= 3 || lead.status === 'Sample / Price Sent') && (
+            {(currentIndex >= 3 || lead.status === 'Sample / Price Sent') && !showWorkflowPopup && (
               <div className="workflow-section">
                 <h4>3. Sample / Pricing Feedback</h4>
                 <div className="form-grid-mini">
@@ -2703,12 +2748,12 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], act
               </div>
             )}
 
-            {workflowForm.response === 'Not Interested' && lead.status !== 'Lost Lead' && (
+            {workflowForm.response === 'Not Interested' && lead.status !== 'Lost Lead' && !showWorkflowPopup && (
               <div className="workflow-section">
                 <h4>2. Close Opportunity</h4>
                 <div className="form-field">
                   <label>Mark as Lost?</label>
-                  <button className="btn-secondary" style={{ color: '#ef4444', borderColor: '#fee2e2', width: '100%' }} onClick={() => { handleUpdateWorkflow({ lostReason: '' }); handleUpdateStatus('Lost Lead'); }}>
+                  <button className="btn-secondary" style={{ color: '#ef4444', borderColor: '#fee2e2', width: '100%' }} onClick={() => { setShowWorkflowPopup(true); setPopupMode('Not Interested'); setPopupError(''); }}>
                     Move to Lost Lead
                   </button>
                 </div>
@@ -2758,6 +2803,175 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], act
             </div>
           </div>
         </div>
+
+        {showWorkflowPopup && (
+          <div className="modal-overlay" onClick={handleCloseWorkflowPopup}>
+            <div className="modal-card" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{popupMode === 'Interested' ? 'Interested Details' : popupMode === 'No Response' ? 'Schedule Follow Up' : 'Not Interested Reason'}</h2>
+                <button className="modal-close" onClick={handleCloseWorkflowPopup}><X size={20} /></button>
+              </div>
+              <div className="modal-body-scrollable">
+                {popupError && <div style={{ color: '#b91c1c', marginBottom: '1rem' }}>{popupError}</div>}
+                {popupMode === 'No Response' && (
+                  <div className="form-grid-mini">
+                    <div className="form-field" style={{ gridColumn: 'span 2' }}>
+                      <label>Next Follow Up</label>
+                      <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
+                    </div>
+                  </div>
+                )}
+
+                {popupMode === 'Not Interested' && (
+                  <div className="form-grid-mini">
+                    <div className="form-field" style={{ gridColumn: 'span 2' }}>
+                      <label>Reason for not interested</label>
+                      <select value={workflowForm.lostReason} onChange={e => handleUpdateWorkflow({ lostReason: e.target.value })}>
+                        <option value="">Select Reason</option>
+                        {['Already has supplier', 'Delivery area issue', 'Low demand', 'Competitor gave better deal', 'Price issue', 'Wrong contact details', 'Not selling soft drinks', 'Not interested at the moment', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {popupMode === 'Interested' && (
+                  <>
+                    <div className="workflow-section">
+                      <h4>Qualification</h4>
+                      <div className="form-grid-mini">
+                        <div className="form-field">
+                          <label>Sells Competitors?</label>
+                          <select value={workflowForm.sellsCompetitorBrands} onChange={e => handleUpdateWorkflow({ sellsCompetitorBrands: e.target.value })}>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </div>
+                        {workflowForm.sellsCompetitorBrands === 'Yes' && (
+                          <div className="form-field">
+                            <label>Competitor Brand</label>
+                            <input type="text" value={workflowForm.topCompetitorBrandName} onChange={e => handleUpdateWorkflow({ topCompetitorBrandName: e.target.value })} />
+                          </div>
+                        )}
+                        <div className="form-field">
+                          <label>Decision Maker?</label>
+                          <select value={workflowForm.isCurrentContactDecisionMaker} onChange={e => handleUpdateWorkflow({ isCurrentContactDecisionMaker: e.target.value })}>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </div>
+                        {workflowForm.isCurrentContactDecisionMaker === 'No' && (
+                          <>
+                            <div className="form-field">
+                              <label>Decision Maker Name</label>
+                              <input type="text" value={workflowForm.decisionMakerName} onChange={e => handleUpdateWorkflow({ decisionMakerName: e.target.value })} />
+                            </div>
+                            <div className="form-field">
+                              <label>Decision Maker Phone</label>
+                              <input type="text" value={workflowForm.decisionMakerContactNumber} onChange={e => handleUpdateWorkflow({ decisionMakerContactNumber: e.target.value })} />
+                            </div>
+                          </>
+                        )}
+                        <div className="form-field">
+                          <label>Decision Maker Role</label>
+                          <select value={workflowForm.decisionMaker} onChange={e => handleUpdateWorkflow({ decisionMaker: e.target.value })}>
+                            <option value="">Select</option>
+                            {['POC', 'Owner', 'Manager', 'Buyer', 'Other'].map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-field">
+                          <label>Usual Quantity</label>
+                          <input type="text" value={workflowForm.usualOrderQuantity} placeholder="e.g. 50 cases/month" onChange={e => handleUpdateWorkflow({ usualOrderQuantity: e.target.value })} />
+                        </div>
+                        <div className="form-field">
+                          <label>Needs Sample/Pricing?</label>
+                          <select value={workflowForm.needsSamplePricing} onChange={e => handleUpdateWorkflow({ needsSamplePricing: e.target.value })}>
+                            <option value="">Select Needs</option>
+                            {['Sample', 'Price List', 'Both'].map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-field">
+                          <label>Next Step</label>
+                          <select value={workflowForm.requiredNextStep} onChange={e => handleUpdateWorkflow({ requiredNextStep: e.target.value })}>
+                            <option value="">Select Next Step</option>
+                            {['Send Price List', 'Send Samples', 'Send Catalogue', 'Schedule Visit', 'Send Company Profile', 'Create Order'].map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="workflow-section">
+                      <h4>Sample / Pricing Feedback</h4>
+                      <div className="form-grid-mini">
+                        <div className="form-field">
+                          <label>Price List Sent</label>
+                          <select value={workflowForm.priceListSent} onChange={e => handleUpdateWorkflow({ priceListSent: e.target.value })}>
+                            <option value="">Select</option>
+                            {['Yes', 'No'].map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-field">
+                          <label>Sample Delivered</label>
+                          <select value={workflowForm.sampleDelivered} onChange={e => handleUpdateWorkflow({ sampleDelivered: e.target.value })}>
+                            <option value="">Select</option>
+                            {['Yes', 'No'].map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        </div>
+                        {workflowForm.sampleDelivered === 'Yes' && (
+                          <div className="form-field">
+                            <label>Sample Delivery Date</label>
+                            <input type="date" value={workflowForm.sampleDeliveryDate} onChange={e => handleUpdateWorkflow({ sampleDeliveryDate: e.target.value })} />
+                          </div>
+                        )}
+                        <div className="form-field">
+                          <label>Catalogue Sent</label>
+                          <select value={workflowForm.catalogueSent} onChange={e => handleUpdateWorkflow({ catalogueSent: e.target.value })}>
+                            <option value="">Select</option>
+                            {['Yes', 'No'].map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-field">
+                          <label>Customer Agreed?</label>
+                          <select value={workflowForm.customerAgreed} onChange={e => handleUpdateWorkflow({ customerAgreed: e.target.value })}>
+                            <option value="">Select</option>
+                            {['Yes', 'No', 'Pending'].map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        </div>
+                        {workflowForm.customerAgreed === 'Pending' && (
+                          <div className="form-field">
+                            <label>Next Follow Up</label>
+                            <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
+                          </div>
+                        )}
+                        {workflowForm.customerAgreed === 'No' && (
+                          <div className="form-field">
+                            <label>Reason for "No"</label>
+                            <select value={workflowForm.reasonForDecision} onChange={e => handleUpdateWorkflow({ reasonForDecision: e.target.value })}>
+                              <option value="">Select Reason</option>
+                              {['Price too high', 'Customer did not like product', 'Already buying competitor brand', 'Wants more time', 'Low demand', 'Delivery issue', 'MOQ issue', 'Payment terms issue', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                          </div>
+                        )}
+                        <div className="form-field" style={{ gridColumn: 'span 2' }}>
+                          <label>Customer Feedback Notes</label>
+                          <textarea 
+                            style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.5rem', minHeight: '60px' }}
+                            value={workflowForm.customerFeedback}
+                            onChange={e => handleUpdateWorkflow({ customerFeedback: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div style={{ padding: '1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button className="btn-secondary" onClick={handleCloseWorkflowPopup}>Cancel</button>
+                <button className="btn-primary" onClick={handleSaveWorkflowPopup} disabled={updating}>{updating ? 'Saving...' : 'Save'}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="actions-column">
           <div className="activity-history-card" style={{ marginTop: '1.5rem' }}>
