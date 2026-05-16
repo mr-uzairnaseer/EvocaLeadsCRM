@@ -2125,6 +2125,12 @@ const OpportunityItem = ({ name, contact, status, onClick }) => (
 );
 
 const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, authHeaders, users = [], activityList = [] }) => {
+  const statuses = [
+    'New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 
+    'Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 
+    'Payment Received', 'Active Customer / Repeat Order', 'Lost Lead'
+  ];
+
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
@@ -2198,7 +2204,30 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
   const saveWorkflowState = async ({ payload = null, afterSave = () => {} } = {}) => {
     setUpdating(true);
     try {
-      const bodyPayload = payload || { ...workflowForm };
+      let bodyPayload = payload || { ...workflowForm };
+      
+      // Auto-determine status if saving the whole form or if not already in payload
+      if (!bodyPayload.status) {
+        const currentStatus = lead.status || 'New Lead';
+        const currentIdx = statuses.indexOf(currentStatus);
+        let nextStatus = currentStatus;
+
+        if (workflowForm.response === 'No Response' && currentIdx < 1) {
+          nextStatus = 'Contacted';
+        } else if (workflowForm.response === 'Not Interested') {
+          nextStatus = 'Lost Lead';
+        } else if (workflowForm.response === 'Interested') {
+          if (currentIdx < 2) nextStatus = 'Qualified Lead';
+          if ((workflowForm.priceListSent === 'Yes' || workflowForm.sampleDelivered === 'Yes') && currentIdx < 3) {
+            nextStatus = 'Sample / Price Sent';
+          }
+        }
+        
+        if (nextStatus !== currentStatus) {
+          bodyPayload.status = nextStatus;
+        }
+      }
+
       const res = await fetch(`/api/leads/${lead._id}`, {
         method: 'PATCH',
         headers: authHeaders,
@@ -2224,9 +2253,17 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
   };
 
   const buildPopupPatch = () => {
-    const patch = { response: workflowForm.response };
+    const patch = { 
+      response: workflowForm.response,
+      dateContacted: workflowForm.dateContacted,
+      contactMethod: workflowForm.contactMethod
+    };
+
+    const currentStatus = lead.status || 'New Lead';
+    const currentIdx = statuses.indexOf(currentStatus);
 
     if (popupMode === 'No Response') {
+      if (currentIdx < 1) patch.status = 'Contacted';
       if (workflowForm.nextFollowUpDate) patch.nextFollowUpDate = workflowForm.nextFollowUpDate;
     }
 
@@ -2236,6 +2273,15 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
     }
 
     if (popupMode === 'Interested') {
+      let nextStatus = currentStatus;
+      if (currentIdx < 2) nextStatus = 'Qualified Lead';
+      
+      if (workflowForm.priceListSent === 'Yes' || workflowForm.sampleDelivered === 'Yes') {
+        if (currentIdx < 3) nextStatus = 'Sample / Price Sent';
+      }
+      
+      if (nextStatus !== currentStatus) patch.status = nextStatus;
+
       const fields = [
         'sellsCompetitorBrands',
         'topCompetitorBrandName',
@@ -2446,11 +2492,6 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
     }
   };
 
-  const statuses = [
-    'New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 
-    'Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 
-    'Payment Received', 'Active Customer / Repeat Order', 'Lost Lead'
-  ];
   const currentIndex = statuses.indexOf(lead.status || 'New Lead');
 
   return (
