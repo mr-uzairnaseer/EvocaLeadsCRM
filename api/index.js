@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const connectDB = require('./utils/db');
 const Lead = require('./models/Lead');
 const User = require('./models/User');
@@ -9,8 +10,9 @@ const Order = require('./models/Order');
 const Delivery = require('./models/Delivery');
 const Workspace = require('./models/Workspace');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../.env') });
 const app = express();
 
 app.use(cors());
@@ -59,16 +61,29 @@ const auth = async (req, res, next) => {
 const seedAdmin = async () => {
   try {
     const adminEmail = 'admin@leadscrm.com';
-    const existingAdmin = await User.findOne({ email: adminEmail });
-    if (!existingAdmin) {
-      const admin = new User({
+    let admin = await User.findOne({ email: adminEmail });
+    
+    if (!admin) {
+      admin = new User({
         name: 'System Admin',
         email: adminEmail,
         password: 'admin_password_123',
-        role: 'Admin'
+        role: 'Admin',
+        isOwner: true
       });
       await admin.save();
       console.log('✅ Auto-Seed: Admin user created.');
+    }
+
+    if (!admin.workspace) {
+      const workspace = new Workspace({
+        name: 'Admin Workspace',
+        owner: admin._id
+      });
+      await workspace.save();
+      admin.workspace = workspace._id;
+      await admin.save();
+      console.log('✅ Auto-Seed: Admin workspace created and linked.');
     }
   } catch (e) {
     console.error('Seed error:', e);
@@ -392,42 +407,53 @@ app.delete('/api/activity/:id', auth, async (req, res) => {
 app.get('/api/stats', auth, async (req, res) => {
   try {
     await connectDB();
-    const filter = { workspace: req.workspaceId };
-    const leads = await Lead.find(filter);
-    const orders = await Order.find(filter);
-    const deliveries = await Delivery.find(filter);
-    
+    const workspaceId = new mongoose.Types.ObjectId(req.workspaceId);
+
+    const leadStats = await Lead.aggregate([
+      { $match: { workspace: workspaceId } },
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+
     const pipeline = {
-      'New Lead': leads.filter(l => l.status === 'New Lead').length,
-      'Contacted': leads.filter(l => l.status === 'Contacted').length,
-      'Qualified Lead': leads.filter(l => l.status === 'Qualified Lead').length,
-      'Sample / Price Sent': leads.filter(l => l.status === 'Sample / Price Sent').length,
-      'Order Confirmed': leads.filter(l => l.status === 'Order Confirmed').length,
-      'Delivery Scheduled': leads.filter(l => l.status === 'Delivery Scheduled').length,
-      'Delivered': leads.filter(l => l.status === 'Delivered').length,
-      'Payment Pending': leads.filter(l => l.status === 'Payment Pending').length,
-      'Payment Received': leads.filter(l => l.status === 'Payment Received').length,
-      'Active Customer / Repeat Order': leads.filter(l => l.status === 'Active Customer / Repeat Order').length,
-      'Lost Lead': leads.filter(l => l.status === 'Lost Lead').length,
+      'New Lead': 0, 'Contacted': 0, 'Qualified Lead': 0, 
+      'Sample / Price Sent': 0, 'Order Confirmed': 0, 
+      'Delivery Scheduled': 0, 'Delivered': 0, 
+      'Payment Pending': 0, 'Payment Received': 0, 
+      'Active Customer / Repeat Order': 0, 'Lost Lead': 0
     };
 
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const monthlySales = orders.filter(o => {
-      const orderDate = new Date(o.createdAt);
-      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
-    }).reduce((sum, o) => sum + (o.totalOrderValue || 0), 0);
+    let totalLeads = 0;
+    leadStats.forEach(stat => {
+      const status = stat._id || 'New Lead';
+      if (pipeline[status] !== undefined) {
+        pipeline[status] = stat.count;
+      }
+      totalLeads += stat.count;
+    });
 
     const endOfToday = new Date();
-    endOfToday.setHours(23,59,59,999);
-    const todayFollowUps = leads.filter(l => l.nextFollowUpDate && new Date(l.nextFollowUpDate) <= endOfToday).length;
+    endOfToday.setHours(23, 59, 59, 999);
     
+    const [todayFollowUps, samplesSent, monthlySales] = await Promise.all([
+      Lead.countDocuments({ workspace: req.workspaceId, nextFollowUpDate: { $lte: endOfToday } }),
+      Delivery.countDocuments({ workspace: req.workspaceId, deliveryType: 'Sales Sample' }),
+      Order.aggregate([
+        { $match: { 
+            workspace: workspaceId,
+            createdAt: { 
+              $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) 
+            }
+        }},
+        { $group: { _id: null, total: { $sum: "$totalOrderValue" } } }
+      ]).then(res => res[0]?.total || 0)
+    ]);
+
     res.send({
-      totalLeads: leads.length,
+      totalLeads,
       newLeads: pipeline['New Lead'],
       hotLeads: pipeline['Qualified Lead'] + pipeline['Sample / Price Sent'],
       todayFollowUps,
-      samplesSent: deliveries.filter(d => d.deliveryType === 'Sales Sample').length,
+      samplesSent,
       deliveredOrders: pipeline['Delivered'],
       monthlySalesValue: monthlySales,
       lostLeads: pipeline['Lost Lead'],
