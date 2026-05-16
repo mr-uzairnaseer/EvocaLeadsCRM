@@ -374,7 +374,27 @@ function App() {
                 key={selectedLead?._id}
                 lead={selectedLead} 
                 onBack={() => setActiveTab(returnTab)} 
-                onSuccess={fetchData}
+                onSuccess={async () => {
+                  // Optimistic fast-refresh for the selected lead and stats only
+                  try {
+                    const [leadRes, statsRes] = await Promise.all([
+                      fetch(`/api/leads/${selectedLead._id}`, { headers: authHeaders }),
+                      fetch('/api/stats', { headers: authHeaders })
+                    ]);
+                    if (leadRes.ok && statsRes.ok) {
+                      const updatedLead = await leadRes.json();
+                      const updatedStats = await statsRes.json();
+                      
+                      setLeads(prev => prev.map(l => l._id === updatedLead._id ? updatedLead : l));
+                      setSelectedLead(updatedLead);
+                      setDashboardStats(updatedStats);
+                    } else {
+                      fetchData(); // fallback
+                    }
+                  } catch (e) {
+                    fetchData(); // fallback
+                  }
+                }}
                 onNavigateToOpportunities={() => setActiveTab('Opportunities')}
                 authHeaders={authHeaders}
                 users={usersList}
