@@ -371,11 +371,13 @@ function App() {
             )}
             {activeTab === 'LeadDetails' && (
               <LeadDetailsView 
+                key={selectedLead?._id}
                 lead={selectedLead} 
                 onBack={() => setActiveTab(returnTab)} 
                 onSuccess={fetchData}
                 authHeaders={authHeaders}
                 users={usersList}
+                activityList={activityList}
               />
             )}
             {activeTab === 'Opportunities' && (
@@ -492,6 +494,15 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
         <div className="stat-subtext">Not contacted yet</div>
         <div className="stat-link">View <ArrowRight size={12} /></div>
       </div>
+      <div className="stat-card clickable" onClick={() => onNavigate('Opportunities')}>
+        <div className="stat-header">
+          <span className="stat-label">Hot Leads</span>
+          <div className="stat-icon-box"><Activity size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.hotLeads || 0}</div>
+        <div className="stat-subtext">Qualified / Interested</div>
+        <div className="stat-link">View <ArrowRight size={12} /></div>
+      </div>
       <div className="stat-card clickable" onClick={() => onNavigate('Calendar')}>
         <div className="stat-header">
           <span className="stat-label">Follow Ups</span>
@@ -503,11 +514,27 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
       </div>
       <div className="stat-card clickable">
         <div className="stat-header">
-          <span className="stat-label">Sample Sent</span>
+          <span className="stat-label">Sales Value</span>
+          <div className="stat-icon-box"><TrendingUp size={16} /></div>
+        </div>
+        <div className="stat-value">£{stats?.monthlySalesValue || 0}</div>
+        <div className="stat-subtext">Monthly total</div>
+      </div>
+      <div className="stat-card clickable">
+        <div className="stat-header">
+          <span className="stat-label">Completed</span>
+          <div className="stat-icon-box"><Check size={16} /></div>
+        </div>
+        <div className="stat-value">{stats?.deliveredOrders || 0}</div>
+        <div className="stat-subtext">Delivered orders</div>
+      </div>
+      <div className="stat-card clickable">
+        <div className="stat-header">
+          <span className="stat-label">Samples</span>
           <div className="stat-icon-box"><Download size={16} /></div>
         </div>
         <div className="stat-value">{stats?.samplesSent || 0}</div>
-        <div className="stat-subtext">Total delivered</div>
+        <div className="stat-subtext">Total sent</div>
       </div>
       <div className="stat-card clickable">
         <div className="stat-header">
@@ -1251,7 +1278,6 @@ const AddOpportunityModal = ({ onClose, onSuccess, authHeaders, users = [] }) =>
     if (!formData.companyName.trim()) newErrors.companyName = true;
     if (!formData.businessType) newErrors.businessType = true;
     if (!formData.cityArea.trim()) newErrors.cityArea = true;
-    if (!formData.postcode.trim()) newErrors.postcode = true;
     
     // Phone validation (at least 10 characters)
     const phoneRegex = /^\+?[\d\s-]{10,}$/; 
@@ -1860,7 +1886,7 @@ const ImportLeadsModal = ({ onClose, type, onSuccess, authHeaders }) => {
           const payload = type === 'users' ? {
             name: item.full_name || item.name || '',
             email: item.email || '',
-            role: item.role ? (item.role.toUpperCase() === 'ADMIN' ? 'Admin' : item.role.toUpperCase()) : 'BDA',
+            role: item.role ? (item.role.toUpperCase() === 'ADMIN' ? 'BDM' : item.role.toUpperCase()) : 'BDA',
             handle: item.username ? (item.username.startsWith('@') ? item.username : '@' + item.username) : '',
             phone: item.phone || '',
             password: item.password || 'password123'
@@ -2016,10 +2042,11 @@ const OpportunityItem = ({ name, contact, status, onClick }) => (
   </div>
 );
 
-const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) => {
+const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], activityList = [] }) => {
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
+  const [isEditingWorkflow, setIsEditingWorkflow] = useState(false);
   const [contactForm, setContactForm] = useState({
     companyName: lead?.companyName || '',
     contactPerson: lead?.contactPerson || '',
@@ -2033,6 +2060,99 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
   const [contactErrors, setContactErrors] = useState({});
   const [generalContactError, setGeneralContactError] = useState('');
 
+  const [workflowForm, setWorkflowForm] = useState({
+    dateContacted: lead?.dateContacted ? new Date(lead.dateContacted).toISOString().slice(0, 16) : '',
+    contactMethod: lead?.contactMethod || '',
+    response: lead?.response || '',
+    nextFollowUpDate: lead?.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toISOString().slice(0, 16) : '',
+    sellsCompetitorBrands: lead?.sellsCompetitorBrands || '',
+    topCompetitorBrandName: lead?.topCompetitorBrandName || '',
+    usualOrderQuantity: lead?.usualOrderQuantity || '',
+    isCurrentContactDecisionMaker: lead?.isCurrentContactDecisionMaker || '',
+    decisionMakerName: lead?.decisionMakerName || '',
+    decisionMakerContactNumber: lead?.decisionMakerContactNumber || '',
+    decisionMaker: lead?.decisionMaker || '',
+    needsSamplePricing: lead?.needsSamplePricing || '',
+    requiredNextStep: lead?.requiredNextStep || '',
+    lostReason: lead?.lostReason || '',
+    priceListSent: lead?.priceListSent || '',
+    sampleDelivered: lead?.sampleDelivered || '',
+    sampleDeliveryDate: lead?.sampleDeliveryDate ? new Date(lead.sampleDeliveryDate).toISOString().split('T')[0] : '',
+    catalogueSent: lead?.catalogueSent || '',
+    companyProfileSent: lead?.companyProfileSent || '',
+    customerAgreed: lead?.customerAgreed || '',
+    reasonForDecision: lead?.reasonForDecision || '',
+    customerFeedback: lead?.customerFeedback || '',
+    deliveryDate: lead?.deliveryDate ? new Date(lead.deliveryDate).toISOString().split('T')[0] : ''
+  });
+
+  const handleUpdateWorkflow = (updates) => {
+    setIsEditingWorkflow(true);
+    setWorkflowForm(prev => ({ ...prev, ...updates }));
+  };
+
+  const saveWorkflowState = async () => {
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/leads/${lead._id}`, {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify(workflowForm)
+      });
+      if (res.ok) {
+        setIsEditingWorkflow(false);
+        onSuccess();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (!isEditingWorkflow && lead) {
+      setWorkflowForm({
+        dateContacted: lead.dateContacted ? new Date(lead.dateContacted).toISOString().slice(0, 16) : '',
+        contactMethod: lead.contactMethod || '',
+        response: lead.response || '',
+        nextFollowUpDate: lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toISOString().slice(0, 16) : '',
+        sellsCompetitorBrands: lead.sellsCompetitorBrands || '',
+        topCompetitorBrandName: lead.topCompetitorBrandName || '',
+        usualOrderQuantity: lead.usualOrderQuantity || '',
+        isCurrentContactDecisionMaker: lead.isCurrentContactDecisionMaker || '',
+        decisionMakerName: lead.decisionMakerName || '',
+        decisionMakerContactNumber: lead.decisionMakerContactNumber || '',
+        decisionMaker: lead.decisionMaker || '',
+        needsSamplePricing: lead.needsSamplePricing || '',
+        requiredNextStep: lead.requiredNextStep || '',
+        lostReason: lead.lostReason || '',
+        priceListSent: lead.priceListSent || '',
+        sampleDelivered: lead.sampleDelivered || '',
+        sampleDeliveryDate: lead.sampleDeliveryDate ? new Date(lead.sampleDeliveryDate).toISOString().split('T')[0] : '',
+        catalogueSent: lead.catalogueSent || '',
+        companyProfileSent: lead.companyProfileSent || '',
+        customerAgreed: lead.customerAgreed || '',
+        reasonForDecision: lead.reasonForDecision || '',
+        customerFeedback: lead.customerFeedback || '',
+        deliveryDate: lead.deliveryDate ? new Date(lead.deliveryDate).toISOString().split('T')[0] : ''
+      });
+    }
+
+    if (!isEditingContact && lead) {
+      setContactForm({
+        companyName: lead?.companyName || '',
+        contactPerson: lead?.contactPerson || '',
+        phoneWhatsApp: lead?.phoneWhatsApp || '',
+        email: lead?.email || '',
+        cityArea: lead?.cityArea || '',
+        postcode: lead?.postcode || '',
+        businessType: lead?.businessType || '',
+        leadOwner: lead?.leadOwner?._id || lead?.leadOwner || ''
+      });
+    }
+  }, [lead, isEditingContact]);
+
   // Filter users who can be assigned as BDA (BDA or BDM role)
   const assignableUsers = users.filter(u => u.role === 'BDA' || u.role === 'BDM');
 
@@ -2043,7 +2163,6 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
     if (!contactForm.companyName.trim()) newErrors.companyName = true;
     if (!contactForm.businessType) newErrors.businessType = true;
     if (!contactForm.cityArea.trim()) newErrors.cityArea = true;
-    if (!contactForm.postcode.trim()) newErrors.postcode = true;
     
     // Phone validation (at least 10 characters)
     const phoneRegex = /^\+?[\d\s-]{10,}$/; 
@@ -2328,59 +2447,189 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
               <div className="form-grid-mini">
                 <div className="form-field">
                   <label>Date Contacted</label>
-                  <input type="datetime-local" value={lead.dateContacted ? new Date(lead.dateContacted).toISOString().slice(0, 16) : ''} onChange={e => handleUpdateStatus(lead.status, { dateContacted: e.target.value })} />
+                  <input type="datetime-local" value={workflowForm.dateContacted} onChange={e => handleUpdateWorkflow({ dateContacted: e.target.value })} />
                 </div>
                 <div className="form-field">
                   <label>Method</label>
-                  <select value={lead.contactMethod || ''} onChange={e => handleUpdateStatus(lead.status, { contactMethod: e.target.value })}>
+                  <select value={workflowForm.contactMethod} onChange={e => handleUpdateWorkflow({ contactMethod: e.target.value })}>
                     <option value="">Select Method</option>
                     {['Call', 'WhatsApp', 'Visit', 'Email'].map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
                 <div className="form-field">
                   <label>Response</label>
-                  <select value={lead.response || ''} onChange={e => handleUpdateStatus(lead.status, { response: e.target.value })}>
+                  <select value={workflowForm.response} onChange={e => handleUpdateWorkflow({ response: e.target.value })}>
                     <option value="">Select Response</option>
                     {['Interested', 'No Response', 'Not Interested'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
+                {workflowForm.response === 'No Response' && (
+                  <div className="form-field">
+                    <label>Next Follow Up</label>
+                    <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
+                  </div>
+                )}
               </div>
             </div>
 
-            {lead.response === 'Interested' && (
+            {(currentIndex >= 2 || workflowForm.response === 'Interested') && (
               <div className="workflow-section">
                 <h4>2. Qualification</h4>
                 <div className="form-grid-mini">
                   <div className="form-field">
                     <label>Sells Competitors?</label>
-                    <select value={lead.sellsCompetitorBrands || ''} onChange={e => handleUpdateStatus(lead.status, { sellsCompetitorBrands: e.target.value })}>
+                    <select value={workflowForm.sellsCompetitorBrands} onChange={e => handleUpdateWorkflow({ sellsCompetitorBrands: e.target.value })}>
                       <option value="">Select</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
                     </select>
                   </div>
-                  {lead.sellsCompetitorBrands === 'Yes' && (
+                  {workflowForm.sellsCompetitorBrands === 'Yes' && (
                     <div className="form-field">
                       <label>Competitor Brand</label>
-                      <input type="text" value={lead.topCompetitorBrandName || ''} onChange={e => handleUpdateStatus(lead.status, { topCompetitorBrandName: e.target.value })} />
+                      <input 
+                        type="text" 
+                        value={workflowForm.topCompetitorBrandName} 
+                        onChange={e => handleUpdateWorkflow({ topCompetitorBrandName: e.target.value })} 
+                      />
                     </div>
                   )}
                   <div className="form-field">
-                    <label>Decision Maker</label>
-                    <select value={lead.decisionMaker || ''} onChange={e => handleUpdateStatus(lead.status, { decisionMaker: e.target.value })}>
+                    <label>Is Contact the Decision Maker?</label>
+                    <select value={workflowForm.isCurrentContactDecisionMaker} onChange={e => handleUpdateWorkflow({ isCurrentContactDecisionMaker: e.target.value })}>
+                      <option value="">Select</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                  {workflowForm.isCurrentContactDecisionMaker === 'No' && (
+                    <>
+                      <div className="form-field">
+                        <label>Decision Maker Name</label>
+                        <input 
+                          type="text" 
+                          value={workflowForm.decisionMakerName}
+                          onChange={e => handleUpdateWorkflow({ decisionMakerName: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label>Decision Maker Phone</label>
+                        <input 
+                          type="text" 
+                          value={workflowForm.decisionMakerContactNumber}
+                          onChange={e => handleUpdateWorkflow({ decisionMakerContactNumber: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div className="form-field">
+                    <label>Decision Maker Role</label>
+                    <select value={workflowForm.decisionMaker} onChange={e => handleUpdateWorkflow({ decisionMaker: e.target.value })}>
+                      <option value="">Select</option>
                       {['POC', 'Owner', 'Manager', 'Buyer', 'Other'].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Usual Quantity</label>
+                    <input 
+                      type="text" 
+                      value={workflowForm.usualOrderQuantity}
+                      placeholder="e.g. 50 cases/month"
+                      onChange={e => handleUpdateWorkflow({ usualOrderQuantity: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Needs Sample/Pricing?</label>
+                    <select value={workflowForm.needsSamplePricing} onChange={e => handleUpdateWorkflow({ needsSamplePricing: e.target.value })}>
+                      <option value="">Select Needs</option>
+                      {['Sample', 'Price List', 'Both'].map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Next Step</label>
+                    <select value={workflowForm.requiredNextStep} onChange={e => handleUpdateWorkflow({ requiredNextStep: e.target.value })}>
+                      <option value="">Select Next Step</option>
+                      {['Send Price List', 'Send Samples', 'Send Catalogue', 'Schedule Visit', 'Send Company Profile', 'Create Order'].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                 </div>
               </div>
             )}
 
-            {lead.response === 'Not Interested' && lead.status !== 'Lost Lead' && (
+            {(currentIndex >= 3 || lead.status === 'Sample / Price Sent') && (
+              <div className="workflow-section">
+                <h4>3. Sample / Pricing Feedback</h4>
+                <div className="form-grid-mini">
+                  <div className="form-field">
+                    <label>Price List Sent</label>
+                    <select value={workflowForm.priceListSent} onChange={e => handleUpdateWorkflow({ priceListSent: e.target.value })}>
+                      <option value="">Select</option>
+                      {['Yes', 'No'].map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Sample Delivered</label>
+                    <select value={workflowForm.sampleDelivered} onChange={e => handleUpdateWorkflow({ sampleDelivered: e.target.value })}>
+                      <option value="">Select</option>
+                      {['Yes', 'No'].map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  {workflowForm.sampleDelivered === 'Yes' && (
+                    <div className="form-field">
+                      <label>Sample Delivery Date</label>
+                      <input type="date" value={workflowForm.sampleDeliveryDate} onChange={e => handleUpdateWorkflow({ sampleDeliveryDate: e.target.value })} />
+                    </div>
+                  )}
+                  <div className="form-field">
+                    <label>Catalogue Sent</label>
+                    <select value={workflowForm.catalogueSent} onChange={e => handleUpdateWorkflow({ catalogueSent: e.target.value })}>
+                      <option value="">Select</option>
+                      {['Yes', 'No'].map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>Customer Agreed?</label>
+                    <select value={workflowForm.customerAgreed} onChange={e => handleUpdateWorkflow({ customerAgreed: e.target.value })}>
+                      <option value="">Select</option>
+                      {['Yes', 'No', 'Pending'].map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  
+                  {workflowForm.customerAgreed === 'Pending' && (
+                    <div className="form-field">
+                      <label>Next Follow Up</label>
+                      <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
+                    </div>
+                  )}
+
+                  {workflowForm.customerAgreed === 'No' && (
+                    <div className="form-field">
+                      <label>Reason for "No"</label>
+                      <select value={workflowForm.reasonForDecision} onChange={e => handleUpdateWorkflow({ reasonForDecision: e.target.value })}>
+                        <option value="">Select Reason</option>
+                        {['Price too high', 'Customer did not like product', 'Already buying competitor brand', 'Wants more time', 'Low demand', 'Delivery issue', 'MOQ issue', 'Payment terms issue', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  
+                  <div className="form-field" style={{ gridColumn: 'span 2' }}>
+                    <label>Customer Feedback Notes</label>
+                    <textarea 
+                      style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.5rem', minHeight: '60px' }}
+                      value={workflowForm.customerFeedback}
+                      onChange={e => handleUpdateWorkflow({ customerFeedback: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {workflowForm.response === 'Not Interested' && lead.status !== 'Lost Lead' && (
               <div className="workflow-section">
                 <h4>2. Close Opportunity</h4>
                 <div className="form-field">
                   <label>Mark as Lost?</label>
-                  <button className="btn-secondary" style={{ color: '#ef4444', borderColor: '#fee2e2', width: '100%' }} onClick={() => handleUpdateStatus('Lost Lead')}>
+                  <button className="btn-secondary" style={{ color: '#ef4444', borderColor: '#fee2e2', width: '100%' }} onClick={() => { handleUpdateWorkflow({ lostReason: '' }); handleUpdateStatus('Lost Lead'); }}>
                     Move to Lost Lead
                   </button>
                 </div>
@@ -2392,7 +2641,7 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
                 <h4 style={{ color: '#dc2626' }}><X size={16} /> Lost Lead Reason</h4>
                 <div className="form-field">
                   <label>Why was this lead lost?</label>
-                  <select value={lead.lostReason || ''} onChange={e => handleUpdateStatus('Lost Lead', { lostReason: e.target.value })}>
+                  <select value={workflowForm.lostReason} onChange={e => handleUpdateWorkflow({ lostReason: e.target.value })}>
                     <option value="">Select Reason</option>
                     {['Already has supplier', 'Delivery area issue', 'Low demand', 'Competitor gave better deal', 'Price issue', 'Wrong contact details', 'Not selling soft drinks', 'Not interested at the moment', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
@@ -2411,12 +2660,23 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
                   {currentIndex >= 5 && (
                     <div className="form-field">
                       <label>Delivery Date</label>
-                      <input type="date" value={lead.deliveryDate ? new Date(lead.deliveryDate).toISOString().split('T')[0] : ''} onChange={e => handleUpdateStatus(lead.status, { deliveryDate: e.target.value })} />
+                      <input type="date" value={workflowForm.deliveryDate} onChange={e => handleUpdateWorkflow({ deliveryDate: e.target.value })} />
                     </div>
                   )}
                 </div>
               </div>
             )}
+            
+            <div style={{ marginTop: '1rem', padding: '1rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                className="btn-primary" 
+                onClick={saveWorkflowState} 
+                disabled={updating}
+                style={{ padding: '0.75rem 1.5rem', fontWeight: 600 }}
+              >
+                {updating ? 'Saving...' : 'Save Workflow Details'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2437,14 +2697,24 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
               </button>
             </div>
             <div className="history-timeline">
-              {/* This should ideally be a filtered activity list for this lead */}
-              <div className="history-item">
-                <div className="history-dot"></div>
-                <div className="history-content">
-                  <div className="history-text">Lead status is: {lead.status}</div>
-                  <div className="history-time">{new Date(lead.updatedAt).toLocaleString()}</div>
+              {activityList.filter(a => a.lead === lead._id).map(act => (
+                <div key={act._id} className="history-item">
+                  <div className="history-dot"></div>
+                  <div className="history-content">
+                    <div className="history-text"><span style={{ fontWeight: 600 }}>{act.user}</span>: {act.text}</div>
+                    <div className="history-time">{new Date(act.createdAt).toLocaleString()}</div>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {activityList.filter(a => a.lead === lead._id).length === 0 && (
+                <div className="history-item">
+                  <div className="history-dot"></div>
+                  <div className="history-content">
+                    <div className="history-text">Lead created and set to: {lead.status || 'New Lead'}</div>
+                    <div className="history-time">{new Date(lead.createdAt || lead.updatedAt).toLocaleString()}</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

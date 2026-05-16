@@ -96,7 +96,7 @@ app.post('/api/auth/signup', async (req, res) => {
       name,
       email,
       password,
-      role: 'Admin',
+      role: 'BDM',
       isOwner: true
     });
     
@@ -147,10 +147,10 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/leads', auth, async (req, res) => {
   try {
     await connectDB();
-    const leads = await Lead.find({ workspace: req.workspaceId }).sort({ createdAt: -1 });
+    const leads = await Lead.find({ workspace: req.workspaceId }).populate('leadOwner', 'name role').sort({ createdAt: -1 });
     res.send(leads);
   } catch (e) {
-    res.status(500).send(e.message);
+    res.status(500).send({ error: e.message });
   }
 });
 
@@ -165,14 +165,16 @@ app.post('/api/leads', auth, async (req, res) => {
       $or: [{ companyName }, { phoneWhatsApp }]
     });
     
-    if (existingLead) return res.status(400).send({ error: 'Duplicate lead found in your workspace.' });
+    // Allow duplicate names if phone numbers are completely different? For CRM usually both matching is bad, but finding either is too aggressive for big CRM. We will assume the CRM meant to block exact duplicates. In the current logic, finding either blocks it. Let's fix that block message to be accurate!
+    
+    if (existingLead) return res.status(400).send({ error: 'Lead with this Company Name or Phone Number already exists in your workspace.' });
 
     const leadOwner = req.body.leadOwner || req.user.id;
     const lead = new Lead({ ...req.body, leadOwner, workspace: req.workspaceId });
     await lead.save();
     
     const activity = new Activity({
-      user: req.user.name,
+      user: req.user ? req.user.name : 'System',
       text: `Lead created: ${lead.companyName}`,
       lead: lead._id,
       workspace: req.workspaceId
@@ -181,7 +183,7 @@ app.post('/api/leads', auth, async (req, res) => {
     
     res.status(201).send(lead);
   } catch (e) {
-    res.status(400).send(e.message);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -189,11 +191,37 @@ app.post('/api/leads', auth, async (req, res) => {
 app.patch('/api/leads/:id', auth, async (req, res) => {
   try {
     await connectDB();
+    const originalLead = await Lead.findOne({ _id: req.params.id, workspace: req.workspaceId });
+    if (!originalLead) return res.status(404).send({ error: 'Lead not found' });
+
     const lead = await Lead.findOneAndUpdate({ _id: req.params.id, workspace: req.workspaceId }, req.body, { new: true });
-    if (!lead) return res.status(404).send({ error: 'Lead not found' });
+    
+    // Log activity if status changed
+    if (req.body.status && req.body.status !== originalLead.status) {
+      const activity = new Activity({
+        user: req.user ? req.user.name : 'System',
+        text: `Status updated to ${req.body.status}`,
+        lead: lead._id,
+        workspace: req.workspaceId
+      });
+      await activity.save();
+    }
+
+    // Log activity if lead owner changed
+    if (req.body.leadOwner && String(req.body.leadOwner) !== String(originalLead.leadOwner)) {
+      const newOwner = await User.findById(req.body.leadOwner);
+      const activity = new Activity({
+        user: req.user ? req.user.name : 'System',
+        text: `Assigned to ${newOwner ? newOwner.name : 'new owner'}`,
+        lead: lead._id,
+        workspace: req.workspaceId
+      });
+      await activity.save();
+    }
+
     res.send(lead);
   } catch (e) {
-    res.status(400).send(e.message);
+    res.status(400).send({ error: e.message });
   }
 });
 
@@ -202,10 +230,14 @@ app.delete('/api/leads/:id', auth, async (req, res) => {
   try {
     await connectDB();
     const lead = await Lead.findOneAndDelete({ _id: req.params.id, workspace: req.workspaceId });
-    if (!lead) return res.status(404).send();
+    if (!lead) return res.status(404).send({ error: 'Lead not found' });
+    
+    // Delete associated activities
+    await Activity.deleteMany({ lead: lead._id, workspace: req.workspaceId });
+
     res.send(lead);
   } catch (e) {
-    res.status(500).send(e.message);
+    res.status(500).send({ error: e.message });
   }
 });
 
@@ -213,10 +245,6 @@ app.delete('/api/leads/:id', auth, async (req, res) => {
 app.get('/api/users', auth, async (req, res) => {
   try {
     await connectDB();
-    // Permission check: only Owner or Admin can see user list
-    if (req.user.role !== 'BDM' && !req.user.isOwner) {
-      return res.status(403).send({ error: 'Permission denied.' });
-    }
     const users = await User.find({ workspace: req.workspaceId }).select('-password');
     res.send(users);
   } catch (e) {
@@ -253,19 +281,19 @@ app.patch('/api/users/:id', auth, async (req, res) => {
 
     // 1. Permission Check
     if (!req.user.isOwner) {
-      // Must be Admin to edit anyone
-      if (req.user.role !== 'Admin') return res.status(403).send({ error: 'Permission denied.' });
+      // Must be BDM to edit anyone
+      if (req.user.role !== 'BDM') return res.status(403).send({ error: 'Permission denied.' });
       
-      // Admins cannot edit other Admins or Owner
+      // BDMs cannot edit other BDMs or Owner
       const isEditingSelf = targetUser._id.toString() === req.user._id.toString();
-      if (!isEditingSelf && (targetUser.isOwner || targetUser.role === 'Admin')) {
-        return res.status(403).send({ error: 'Admins cannot modify other administrators or the owner.' });
+      if (!isEditingSelf && (targetUser.isOwner || targetUser.role === 'BDM')) {
+        return res.status(403).send({ error: 'Managers cannot modify other administrators or the owner.' });
       }
     }
 
     // 2. Promotion Check
-    if (req.body.role === 'Admin' && !req.user.isOwner) {
-      return res.status(403).send({ error: 'Only workspace owners can promote users to Admin.' });
+    if (req.body.role === 'BDM' && !req.user.isOwner) {
+      return res.status(403).send({ error: 'Only workspace owners can promote users to Manager.' });
     }
 
     const { password, ...updates } = req.body;
@@ -299,11 +327,11 @@ app.delete('/api/users/:id', auth, async (req, res) => {
     // 2. Permission check
     // If requester is not owner...
     if (!req.user.isOwner) {
-      // Must be Admin to delete anyone
-      if (req.user.role !== 'Admin') return res.status(403).send({ error: 'Permission denied.' });
+      // Must be BDM to delete anyone
+      if (req.user.role !== 'BDM') return res.status(403).send({ error: 'Permission denied. Only BDM or Owner can delete.' });
       
-      // Admins cannot delete other Admins
-      if (userToDelete.role === 'Admin') return res.status(403).send({ error: 'Admins cannot delete other administrators.' });
+      // BDMs cannot delete other BDMs
+      if (userToDelete.role === 'BDM') return res.status(403).send({ error: 'Managers cannot delete other administrators.' });
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -317,7 +345,7 @@ app.delete('/api/users/:id', auth, async (req, res) => {
 app.get('/api/activity', auth, async (req, res) => {
   try {
     await connectDB();
-    const activity = await Activity.find({ workspace: req.workspaceId }).sort({ createdAt: -1 }).limit(20);
+    const activity = await Activity.find({ workspace: req.workspaceId }).sort({ createdAt: -1 }).limit(500);
     res.send(activity);
   } catch (e) {
     res.status(500).send(e.message);
@@ -327,7 +355,11 @@ app.get('/api/activity', auth, async (req, res) => {
 app.post('/api/activity', auth, async (req, res) => {
   try {
     await connectDB();
-    const activity = new Activity({ ...req.body, workspace: req.workspaceId });
+    const activity = new Activity({ 
+      ...req.body, 
+      user: req.user ? req.user.name : req.body.user,
+      workspace: req.workspaceId 
+    });
     await activity.save();
     res.status(201).send(activity);
   } catch (e) {

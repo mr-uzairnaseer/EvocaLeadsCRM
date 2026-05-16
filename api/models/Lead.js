@@ -73,6 +73,9 @@ const leadSchema = new mongoose.Schema({
   customerAgreed: { type: String, enum: ['Yes', 'No', 'Pending'] },
   reasonForDecision: { type: String },
 
+  // 5. Order & Delivery Fields
+  deliveryDate: { type: Date },
+
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', required: true }
