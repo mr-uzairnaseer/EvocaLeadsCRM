@@ -67,6 +67,59 @@ function App() {
     localStorage.removeItem('returnTab');
   };
 
+  // ─── Granular Refresh Functions ─────────────────────────────────────
+  // Instead of refetching ALL data for every tiny mutation,
+  // we provide targeted refresh functions per resource.
+
+  const refreshLeads = async () => {
+    try {
+      const res = await fetch('/api/leads', { headers: authHeaders });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLeads(data);
+        // Sync selectedLead if currently viewing one
+        const currentLeadId = selectedLead?._id || persistedLeadId;
+        if (currentLeadId) {
+          const updated = data.find(l => l._id === currentLeadId);
+          if (updated) setSelectedLead(updated);
+        }
+      }
+    } catch (e) {
+      console.error('Error refreshing leads:', e);
+    }
+  };
+
+  const refreshStats = async () => {
+    try {
+      const res = await fetch('/api/stats', { headers: authHeaders });
+      const data = await res.json();
+      setDashboardStats(data);
+    } catch (e) {
+      console.error('Error refreshing stats:', e);
+    }
+  };
+
+  const refreshActivity = async () => {
+    try {
+      const res = await fetch('/api/activity', { headers: authHeaders });
+      const data = await res.json();
+      if (Array.isArray(data)) setActivityList(data);
+    } catch (e) {
+      console.error('Error refreshing activity:', e);
+    }
+  };
+
+  const refreshUsers = async () => {
+    try {
+      const res = await fetch('/api/users', { headers: authHeaders });
+      const data = await res.json();
+      if (Array.isArray(data)) setUsersList(data);
+    } catch (e) {
+      console.error('Error refreshing users:', e);
+    }
+  };
+
+  // Full fetch — only used on initial load and background polling
   const fetchData = async () => {
     try {
       const [leadsRes, usersRes, activityRes, statsRes] = await Promise.all([
@@ -76,20 +129,19 @@ function App() {
         fetch('/api/stats', { headers: authHeaders })
       ]);
       
-      const leadsData = await leadsRes.json();
-      const usersData = await usersRes.json();
-      const activityData = await activityRes.json();
-      const statsData = await statsRes.json();
+      const [leadsData, usersData, activityData, statsData] = await Promise.all([
+        leadsRes.json(), usersRes.json(), activityRes.json(), statsRes.json()
+      ]);
       
       setLeads(Array.isArray(leadsData) ? leadsData : []);
       setUsersList(Array.isArray(usersData) ? usersData : []);
       setActivityList(Array.isArray(activityData) ? activityData : []);
       setDashboardStats(statsData);
       
-      // Update selectedLead if it's currently being viewed or persisted
+      // Sync selectedLead if currently viewing one
       const currentLeadId = selectedLead?._id || persistedLeadId;
       if (currentLeadId) {
-        const updatedLead = leadsData.find(l => l._id === currentLeadId);
+        const updatedLead = (Array.isArray(leadsData) ? leadsData : []).find(l => l._id === currentLeadId);
         if (updatedLead) setSelectedLead(updatedLead);
       }
       
@@ -100,10 +152,50 @@ function App() {
     }
   };
 
+  // ─── Optimistic State Helpers ───────────────────────────────────────
+  // Update a single lead in the leads array (used after PATCH/POST)
+  const upsertLeadInState = (updatedLead) => {
+    if (!updatedLead?._id) return;
+    setLeads(prev => {
+      const exists = prev.some(l => l._id === updatedLead._id);
+      if (exists) return prev.map(l => l._id === updatedLead._id ? updatedLead : l);
+      return [updatedLead, ...prev]; // new lead goes to top
+    });
+    // Also sync selectedLead if it's the one being viewed
+    if (selectedLead?._id === updatedLead._id) {
+      setSelectedLead(updatedLead);
+    }
+  };
+
+  const removeLeadFromState = (leadId) => {
+    setLeads(prev => prev.filter(l => l._id !== leadId));
+    if (selectedLead?._id === leadId) setSelectedLead(null);
+  };
+
+  const upsertUserInState = (updatedUser) => {
+    if (!updatedUser?._id) return;
+    setUsersList(prev => {
+      const exists = prev.some(u => u._id === updatedUser._id);
+      if (exists) return prev.map(u => u._id === updatedUser._id ? updatedUser : u);
+      return [...prev, updatedUser];
+    });
+  };
+
+  const removeUserFromState = (userId) => {
+    setUsersList(prev => prev.filter(u => u._id !== userId));
+  };
+
+  const removeActivityFromState = (activityId) => {
+    setActivityList(prev => prev.filter(a => a._id !== activityId));
+  };
+
+  // ─── Initial Load & Background Sync ─────────────────────────────────
   React.useEffect(() => {
     if (token) {
       fetchData();
-      const interval = setInterval(fetchData, 30000); // Poll every 30 seconds
+      // Background sync every 60s — just keeps things fresh,
+      // mutations update state immediately via optimistic updates
+      const interval = setInterval(fetchData, 60000);
       return () => clearInterval(interval);
     }
   }, [token]);
@@ -145,58 +237,77 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // ─── Optimistic User Handlers ───────────────────────────────────────
   const handleDeactivateUser = async (targetUser) => {
     const newStatus = targetUser.status === 'inactive' ? 'active' : 'inactive';
+    // Optimistic: update state immediately
+    upsertUserInState({ ...targetUser, status: newStatus });
     try {
       const res = await fetch(`/api/users/${targetUser._id}`, {
         method: 'PATCH',
         headers: authHeaders,
         body: JSON.stringify({ status: newStatus })
       });
-      if (res.ok) fetchData();
+      if (res.ok) {
+        const updated = await res.json();
+        upsertUserInState(updated);
+      } else {
+        // Revert on failure
+        upsertUserInState(targetUser);
+      }
     } catch (e) {
       console.error(e);
+      upsertUserInState(targetUser); // revert
     }
   };
 
   const handleDeleteUser = async (targetUser) => {
     if (!window.confirm(`Are you sure you want to delete ${targetUser.name}?`)) return;
+    // Optimistic: remove from state immediately
+    removeUserFromState(targetUser._id);
     try {
       const res = await fetch(`/api/users/${targetUser._id}`, {
         method: 'DELETE',
         headers: authHeaders
       });
-      if (res.ok) fetchData();
-      else {
+      if (!res.ok) {
         const err = await res.json();
         alert(err.error || 'Failed to delete user');
+        upsertUserInState(targetUser); // revert
       }
     } catch (e) {
       console.error(e);
+      upsertUserInState(targetUser); // revert
     }
   };
 
+  // ─── Optimistic Activity Handlers ───────────────────────────────────
   const handleMarkAllRead = async () => {
+    // Optimistic: mark all as read in state immediately
+    setActivityList(prev => prev.map(a => ({ ...a, isRead: true })));
     try {
-      const res = await fetch('/api/activity/mark-all-read', {
+      await fetch('/api/activity/mark-all-read', {
         method: 'POST',
         headers: authHeaders
       });
-      if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
+      refreshActivity(); // revert by re-fetching
     }
   };
 
   const handleDeleteActivity = async (id) => {
+    // Optimistic: remove from state immediately
+    removeActivityFromState(id);
     try {
       const res = await fetch(`/api/activity/${id}`, {
         method: 'DELETE',
         headers: authHeaders
       });
-      if (res.ok) fetchData();
+      if (!res.ok) refreshActivity(); // revert
     } catch (e) {
       console.error(e);
+      refreshActivity(); // revert
     }
   };
 
@@ -374,8 +485,20 @@ function App() {
                 key={selectedLead?._id}
                 lead={selectedLead} 
                 onBack={() => setActiveTab(returnTab)} 
-                onSuccess={async () => {
-                  // Optimistic fast-refresh for the selected lead and stats only
+                onSuccess={async (updatedLeadFromApi) => {
+                  // If the PATCH/POST already returned the updated lead, use it directly
+                  if (updatedLeadFromApi?._id) {
+                    upsertLeadInState(updatedLeadFromApi);
+                    refreshStats(); // background stats refresh
+                    refreshActivity(); // background activity refresh
+                    return;
+                  }
+                  // If explicitly null (e.g. from note add), just refresh activity
+                  if (updatedLeadFromApi === null) {
+                    refreshActivity();
+                    return;
+                  }
+                  // Fallback: fetch single lead + stats
                   try {
                     const [leadRes, statsRes] = await Promise.all([
                       fetch(`/api/leads/${selectedLead._id}`, { headers: authHeaders }),
@@ -384,16 +507,23 @@ function App() {
                     if (leadRes.ok && statsRes.ok) {
                       const updatedLead = await leadRes.json();
                       const updatedStats = await statsRes.json();
-                      
-                      setLeads(prev => prev.map(l => l._id === updatedLead._id ? updatedLead : l));
-                      setSelectedLead(updatedLead);
+                      upsertLeadInState(updatedLead);
                       setDashboardStats(updatedStats);
                     } else {
-                      fetchData(); // fallback
+                      refreshLeads();
+                      refreshStats();
                     }
+                    refreshActivity();
                   } catch (e) {
-                    fetchData(); // fallback
+                    refreshLeads();
+                    refreshStats();
+                    refreshActivity();
                   }
+                }}
+                onDelete={() => {
+                  removeLeadFromState(selectedLead._id);
+                  refreshStats();
+                  refreshActivity();
                 }}
                 onNavigateToOpportunities={() => setActiveTab('Opportunities')}
                 authHeaders={authHeaders}
@@ -474,9 +604,9 @@ function App() {
       </main>
 
       {/* Modals */}
-      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} onSuccess={fetchData} authHeaders={authHeaders} users={usersList} />}
-      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} onSuccess={fetchData} authHeaders={authHeaders} />}
-      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} onSuccess={fetchData} authHeaders={authHeaders} currentUser={user} />}
+      {showAddModal && <AddOpportunityModal onClose={() => setShowAddModal(false)} onSuccess={(newLead) => { if (newLead?._id) upsertLeadInState(newLead); else refreshLeads(); refreshStats(); refreshActivity(); }} authHeaders={authHeaders} users={usersList} />}
+      {showImportModal && <ImportLeadsModal onClose={() => setShowImportModal(false)} type={importType} onSuccess={() => { refreshLeads(); refreshStats(); refreshActivity(); if (importType === 'users') refreshUsers(); }} authHeaders={authHeaders} />}
+      {showUserModal && <UserModal mode={userModalMode} user={selectedUser} onClose={() => setShowUserModal(false)} onSuccess={(savedUser) => { if (savedUser?._id) upsertUserInState(savedUser); else refreshUsers(); }} authHeaders={authHeaders} currentUser={user} />}
       {showResetPasswordModal && <ResetPasswordModal user={resetTargetUser} onClose={() => setShowResetPasswordModal(false)} authHeaders={authHeaders} />}
       
       {/* Search Popup */}
@@ -1410,7 +1540,8 @@ const AddOpportunityModal = ({ onClose, onSuccess, authHeaders, users = [] }) =>
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        onSuccess();
+        const newLead = await res.json();
+        onSuccess(newLead);
         onClose();
       } else {
         const errorText = await res.text();
@@ -1709,7 +1840,8 @@ const UserModal = ({ mode, user, onClose, onSuccess, authHeaders, currentUser })
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        onSuccess();
+        const savedUser = await res.json();
+        onSuccess(savedUser);
         onClose();
       } else {
         const errorText = await res.text();
@@ -2144,7 +2276,7 @@ const OpportunityItem = ({ name, contact, status, onClick }) => (
   </div>
 );
 
-const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, authHeaders, users = [], activityList = [] }) => {
+const LeadDetailsView = ({ lead, onBack, onSuccess, onDelete, onNavigateToOpportunities, authHeaders, users = [], activityList = [] }) => {
   const statuses = [
     'New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 
     'Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 
@@ -2256,7 +2388,7 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsEditingWorkflow(false);
-        onSuccess();
+        onSuccess(data);
         afterSave();
         return true;
       }
@@ -2437,7 +2569,8 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
         body: JSON.stringify({ status: newStatus, ...extraFields })
       });
       if (res.ok) {
-        onSuccess();
+        const updated = await res.json();
+        onSuccess(updated);
       }
     } catch (e) {
       console.error(e);
@@ -2454,7 +2587,7 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
         headers: authHeaders
       });
       if (res.ok) {
-        onSuccess();
+        if (onDelete) onDelete();
         onBack();
       }
     } catch (e) {
@@ -2477,8 +2610,9 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
         body: JSON.stringify(contactForm)
       });
       if (res.ok) {
+        const updated = await res.json();
         setIsEditingContact(false);
-        onSuccess();
+        onSuccess(updated);
       } else {
         const errorText = await res.text();
         setGeneralContactError(errorText || 'Failed to update contact.');
@@ -2498,14 +2632,16 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, onNavigateToOpportunities, a
         method: 'POST',
         headers: authHeaders,
         body: JSON.stringify({
-          user: 'User', // Will be handled by backend session or we can pass user.name
+          user: 'User',
           text: note,
           lead: lead._id
         })
       });
       if (res.ok) {
+        const newActivity = await res.json();
         setNote('');
-        onSuccess();
+        // Notes don't change lead data, just refresh activity list
+        onSuccess(null); // triggers activity refresh in parent
       }
     } catch (e) {
       console.error(e);
