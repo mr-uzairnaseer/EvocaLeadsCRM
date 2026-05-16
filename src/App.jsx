@@ -2421,39 +2421,6 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [] }) =
         </div>
 
         <div className="actions-column">
-          <div className="details-card">
-            <div className="card-title-row">
-              <h3>Action Center</h3>
-            </div>
-            <div className="field-group">
-              <div className="field-label">Current Status</div>
-              <select 
-                className="form-select" 
-                value={lead.status} 
-                onChange={(e) => handleUpdateStatus(e.target.value)}
-                disabled={updating}
-              >
-                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="field-group">
-              <div className="field-label">Next Follow-up</div>
-              <div className="filter-dropdown" style={{ width: '100%', justifyContent: 'space-between' }}>
-                <span>{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleString() : 'Not scheduled'}</span>
-                <Calendar size={14} />
-              </div>
-            </div>
-            
-            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button className="action-btn-white" style={{ width: '100%' }}>
-                <Plus size={18} /> Create Order
-              </button>
-              <button className="action-btn-white" style={{ width: '100%' }}>
-                <Download size={18} /> Schedule Delivery
-              </button>
-            </div>
-          </div>
-
           <div className="activity-history-card" style={{ marginTop: '1.5rem' }}>
             <div className="card-title-row">
               <h3>Activity & Notes</h3>
