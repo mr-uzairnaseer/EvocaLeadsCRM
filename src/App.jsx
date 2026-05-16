@@ -533,7 +533,7 @@ function App() {
             )}
             {activeTab === 'Opportunities' && (
               <OpportunitiesView 
-                leads={leads.filter(l => ['New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 'Lost Lead'].includes(l.status) || !l.status)}
+                leads={leads}
                 onAdd={() => setShowAddModal(true)} 
                 onImport={() => { setImportType('leads'); setShowImportModal(true); }} 
                 viewMode={opportunitiesViewMode}
@@ -568,7 +568,7 @@ function App() {
                 }} 
               />
             )}
-            {activeTab === 'Calendar' && <CalendarView leads={leads} />}
+            {activeTab === 'Calendar' && <CalendarView leads={leads.filter(l => l.status !== 'Lost Lead')} />}
             {activeTab === 'Users' && (user?.role === 'BDM' || user?.role === 'Admin' || user?.isOwner) && (
               <UsersView 
                 users={usersList}
@@ -1133,10 +1133,50 @@ const isSameDay = (a, b) => {
 const CalendarView = ({ leads }) => {
   const [calendarMode, setCalendarMode] = useState('Month');
   const today = new Date();
+
+  // Auto-detect best initial month: nearest callback month (prefer future, fallback to past)
+  const getInitialViewDate = () => {
+    const callbackDates = leads
+      .map(l => getCallbackDate(l))
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+    
+    if (callbackDates.length === 0) return new Date();
+    
+    // Check if any callbacks exist in current month
+    const hasCurrentMonth = callbackDates.some(d => 
+      d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth()
+    );
+    if (hasCurrentMonth) return new Date();
+    
+    // Find nearest future callback
+    const futureCallbacks = callbackDates.filter(d => d >= today);
+    if (futureCallbacks.length > 0) return futureCallbacks[0];
+    
+    // Fallback: nearest past callback
+    return callbackDates[callbackDates.length - 1];
+  };
+
+  const [viewDate, setViewDate] = useState(getInitialViewDate);
+
   const callbacksToday = leads.filter(l => {
     const callbackDate = getCallbackDate(l);
     return isSameDay(callbackDate, today);
   });
+
+  const goToToday = () => setViewDate(new Date());
+
+  const navigateMonth = (delta) => {
+    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  };
+
+  const navigateDay = (delta) => {
+    setViewDate(prev => {
+      const d = new Date(prev);
+      d.setDate(d.getDate() + delta);
+      return d;
+    });
+  };
 
   return (
     <div className="page-content">
@@ -1158,21 +1198,24 @@ const CalendarView = ({ leads }) => {
           <h1>Calendar</h1>
           <p>Manage scheduled appointments and callbacks</p>
         </div>
-        <div className="tab-toggle">
-          {['Month', 'Day', 'List'].map(mode => (
-            <button 
-              key={mode} 
-              className={`tab-btn ${calendarMode === mode ? 'active' : ''}`}
-              onClick={() => setCalendarMode(mode)}
-            >
-              {mode}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button className="btn-secondary" style={{ padding: '0 1rem', height: '38px' }} onClick={goToToday}>Today</button>
+          <div className="tab-toggle">
+            {['Month', 'Day', 'List'].map(mode => (
+              <button 
+                key={mode} 
+                className={`tab-btn ${calendarMode === mode ? 'active' : ''}`}
+                onClick={() => setCalendarMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      {calendarMode === 'Month' && <CalendarMonthView leads={leads} />}
-      {calendarMode === 'Day' && <CalendarDayView leads={leads} />}
+      {calendarMode === 'Month' && <CalendarMonthView leads={leads} viewDate={viewDate} onNavigate={navigateMonth} />}
+      {calendarMode === 'Day' && <CalendarDayView leads={leads} viewDate={viewDate} onNavigate={navigateDay} />}
       {calendarMode === 'List' && <CalendarListView leads={leads} />}
     </div>
   );
@@ -1291,11 +1334,13 @@ const UserCard = ({ user, initials, name, handle, email, phone, role, status, on
   </div>
 );
 
-const CalendarMonthView = ({ leads }) => {
+const CalendarMonthView = ({ leads, viewDate, onNavigate }) => {
   const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const monthStart = new Date(year, month, 1);
   const monthName = monthStart.toLocaleString(undefined, { month: 'long' });
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startWeekday = (monthStart.getDay() + 6) % 7; // Align Monday as first column
   const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
   const leadsWithCallbacks = leads.filter(l => getCallbackDate(l));
@@ -1303,9 +1348,9 @@ const CalendarMonthView = ({ leads }) => {
   return (
     <div className="calendar-container">
       <div className="calendar-nav-header">
-        <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
-        <h2>{monthName} {today.getFullYear()}</h2>
-        <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+        <button className="cal-nav-btn" onClick={() => onNavigate(-1)}><ChevronLeft size={20} /></button>
+        <h2>{monthName} {year}</h2>
+        <button className="cal-nav-btn" onClick={() => onNavigate(1)}><ChevronRight size={20} /></button>
       </div>
       <div className="calendar-grid">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
@@ -1315,7 +1360,7 @@ const CalendarMonthView = ({ leads }) => {
         {Array.from({ length: totalCells }).map((_, idx) => {
           const dayNumber = idx - startWeekday + 1;
           const isVisible = dayNumber > 0 && dayNumber <= daysInMonth;
-          const date = isVisible ? new Date(today.getFullYear(), today.getMonth(), dayNumber) : null;
+          const date = isVisible ? new Date(year, month, dayNumber) : null;
           const dayLeads = isVisible
             ? leadsWithCallbacks.filter(l => isSameDay(getCallbackDate(l), date))
             : [];
@@ -1342,16 +1387,17 @@ const CalendarMonthView = ({ leads }) => {
   );
 };
 
-const CalendarDayView = ({ leads }) => {
+const CalendarDayView = ({ leads, viewDate, onNavigate }) => {
   const today = new Date();
-  const dayLeads = leads.filter(l => isSameDay(getCallbackDate(l), today));
+  const dayLeads = leads.filter(l => isSameDay(getCallbackDate(l), viewDate));
+  const isToday = isSameDay(viewDate, today);
 
   return (
     <div className="calendar-container">
       <div className="calendar-nav-header">
-        <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
-        <h2>{today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h2>
-        <button className="cal-nav-btn"><ChevronRight size={20} /></button>
+        <button className="cal-nav-btn" onClick={() => onNavigate(-1)}><ChevronLeft size={20} /></button>
+        <h2>{viewDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}{isToday ? ' (Today)' : ''}</h2>
+        <button className="cal-nav-btn" onClick={() => onNavigate(1)}><ChevronRight size={20} /></button>
       </div>
       <div className="day-schedule-list">
         {dayLeads.map(l => (
@@ -1370,7 +1416,7 @@ const CalendarDayView = ({ leads }) => {
             </div>
           </div>
         ))}
-        {dayLeads.length === 0 && <p style={{ color: '#9ca3af', padding: '1rem' }}>No callbacks today.</p>}
+        {dayLeads.length === 0 && <p style={{ color: '#9ca3af', padding: '1rem' }}>No callbacks on this day.</p>}
       </div>
     </div>
   );
