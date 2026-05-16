@@ -924,9 +924,68 @@ const ContactView = ({ leads, onLeadClick }) => {
   );
 };
 
+const getCallbackDate = (lead) => {
+  if (!lead) return null;
+  if (lead.nextFollowUpDate) {
+    const parsed = new Date(lead.nextFollowUpDate);
+    if (!isNaN(parsed)) return parsed;
+  }
+
+  if (!lead.callback) return null;
+  const callbackText = lead.callback.trim();
+  const lower = callbackText.toLowerCase();
+  if (lower.includes('today')) return new Date();
+  if (lower.includes('tomorrow')) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  }
+  const parsed = new Date(callbackText);
+  if (!isNaN(parsed)) return parsed;
+
+  const dateMatch = callbackText.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+  if (dateMatch) {
+    const day = parseInt(dateMatch[1], 10);
+    const month = parseInt(dateMatch[2], 10) - 1;
+    const year = dateMatch[3] ? parseInt(dateMatch[3], 10) : new Date().getFullYear();
+    const fallback = new Date(year, month, day);
+    if (!isNaN(fallback)) return fallback;
+  }
+
+  return null;
+};
+
+const getLeadName = (lead) => lead?.companyName || lead?.business || 'Unnamed lead';
+const getLeadContact = (lead) => lead?.contactPerson || lead?.contactName || 'No contact';
+const getLeadPhone = (lead) => lead?.phoneWhatsApp || lead?.phone || 'No phone';
+
+const formatCallbackTime = (lead) => {
+  const date = getCallbackDate(lead);
+  if (date) {
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+  return lead.callback || 'Scheduled';
+};
+
+const formatCallbackDate = (lead) => {
+  const date = getCallbackDate(lead);
+  if (date) {
+    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  return lead.callback || 'Scheduled';
+};
+
+const isSameDay = (a, b) => {
+  return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+};
+
 const CalendarView = ({ leads }) => {
   const [calendarMode, setCalendarMode] = useState('Month');
-  const callbacksToday = leads.filter(l => l.callback && l.callback.includes('today')); // Simplified check
+  const today = new Date();
+  const callbacksToday = leads.filter(l => {
+    const callbackDate = getCallbackDate(l);
+    return isSameDay(callbackDate, today);
+  });
 
   return (
     <div className="page-content">
@@ -937,7 +996,7 @@ const CalendarView = ({ leads }) => {
           <div className="alert-content">
             <div className="alert-title">You have {callbacksToday.length} callback{callbacksToday.length > 1 ? 's' : ''} today</div>
             {callbacksToday.slice(0, 2).map(l => (
-              <div key={l._id} className="alert-item"><Phone size={14} /> {l.business}</div>
+              <div key={l._id} className="alert-item"><Phone size={14} /> {getLeadName(l)}</div>
             ))}
           </div>
         </div>
@@ -1082,27 +1141,48 @@ const UserCard = ({ user, initials, name, handle, email, phone, role, status, on
 );
 
 const CalendarMonthView = ({ leads }) => {
-  const leadsWithCallbacks = leads.filter(l => l.callback);
-  
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthName = monthStart.toLocaleString(undefined, { month: 'long' });
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const startWeekday = (monthStart.getDay() + 6) % 7; // Align Monday as first column
+  const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+  const leadsWithCallbacks = leads.filter(l => getCallbackDate(l));
+
   return (
     <div className="calendar-container">
       <div className="calendar-nav-header">
         <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
-        <h2>May 2026</h2>
+        <h2>{monthName} {today.getFullYear()}</h2>
         <button className="cal-nav-btn"><ChevronRight size={20} /></button>
       </div>
       <div className="calendar-grid">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
           <div key={day} className="cal-weekday">{day}</div>
         ))}
-        {[...Array(31)].map((_, i) => {
-          const dayLeads = leadsWithCallbacks.filter(l => l.callback.includes(`${i + 1}/05`) || (i === 11 && l.callback.toLowerCase().includes('today')));
+
+        {Array.from({ length: totalCells }).map((_, idx) => {
+          const dayNumber = idx - startWeekday + 1;
+          const isVisible = dayNumber > 0 && dayNumber <= daysInMonth;
+          const date = isVisible ? new Date(today.getFullYear(), today.getMonth(), dayNumber) : null;
+          const dayLeads = isVisible
+            ? leadsWithCallbacks.filter(l => isSameDay(getCallbackDate(l), date))
+            : [];
+
           return (
-            <div key={i} className={`cal-day-cell ${i === 11 ? 'today' : ''}`}>
-              <span className="day-num">{i + 1}</span>
-              {dayLeads.map(l => (
-                <CalendarPill key={l._id} color="mint" label={l.business} />
-              ))}
+            <div key={idx} className={`cal-day-cell ${isVisible && isSameDay(date, today) ? 'today' : ''}`}>
+              {isVisible ? (
+                <>
+                  <span className="day-num">{dayNumber}</span>
+                  {dayLeads.map(l => (
+                    <CalendarPill
+                      key={l._id}
+                      color="mint"
+                      label={`${formatCallbackTime(l)} · ${getLeadName(l)}`}
+                    />
+                  ))}
+                </>
+              ) : <span className="day-num" />}
             </div>
           );
         })}
@@ -1112,13 +1192,14 @@ const CalendarMonthView = ({ leads }) => {
 };
 
 const CalendarDayView = ({ leads }) => {
-  const dayLeads = leads.filter(l => l.callback && (l.callback.includes('12/05') || l.callback.toLowerCase().includes('today')));
-  
+  const today = new Date();
+  const dayLeads = leads.filter(l => isSameDay(getCallbackDate(l), today));
+
   return (
     <div className="calendar-container">
       <div className="calendar-nav-header">
         <button className="cal-nav-btn"><ChevronLeft size={20} /></button>
-        <h2>Tuesday, May 12, 2026</h2>
+        <h2>{today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h2>
         <button className="cal-nav-btn"><ChevronRight size={20} /></button>
       </div>
       <div className="day-schedule-list">
@@ -1128,12 +1209,12 @@ const CalendarDayView = ({ leads }) => {
             <div className="event-info">
               <div className="event-header">
                 <Phone size={18} color="#10b981" />
-                <span className="event-title">{l.business}</span>
+                <span className="event-title">{getLeadName(l)}</span>
                 <span className="status-badge approved" style={{ background: '#dcfce7', color: '#059669' }}>Callback</span>
               </div>
               <div className="event-meta">
-                <div className="meta-item"><Clock size={14} /> {l.callback}</div>
-                <div className="meta-item"><Phone size={14} /> {l.phone}</div>
+                <div className="meta-item"><Clock size={14} /> {formatCallbackTime(l)}</div>
+                <div className="meta-item"><Phone size={14} /> {getLeadPhone(l)}</div>
               </div>
             </div>
           </div>
@@ -1145,7 +1226,7 @@ const CalendarDayView = ({ leads }) => {
 };
 
 const CalendarListView = ({ leads }) => {
-  const leadsWithCallbacks = leads.filter(l => l.callback);
+  const leadsWithCallbacks = leads.filter(l => getCallbackDate(l));
 
   return (
     <div className="calendar-list-workspace">
@@ -1167,11 +1248,11 @@ const CalendarListView = ({ leads }) => {
         {leadsWithCallbacks.map(l => (
           <AppointmentCard 
             key={l._id}
-            name={l.business} 
+            name={getLeadName(l)} 
             type="Callback" 
-            contact={l.contactName || 'No contact'} 
+            contact={getLeadContact(l)} 
             bdm={l.bdm} 
-            time={l.callback} 
+            time={formatCallbackDate(l)} 
           />
         ))}
         {leadsWithCallbacks.length === 0 && <p style={{ color: '#9ca3af' }}>No scheduled callbacks or appointments.</p>}
@@ -2463,12 +2544,10 @@ const LeadDetailsView = ({ lead, onBack, onSuccess, authHeaders, users = [], act
                     {['Interested', 'No Response', 'Not Interested'].map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
-                {workflowForm.response === 'No Response' && (
-                  <div className="form-field">
-                    <label>Next Follow Up</label>
-                    <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
-                  </div>
-                )}
+                <div className="form-field">
+                  <label>Next Follow Up</label>
+                  <input type="datetime-local" value={workflowForm.nextFollowUpDate} onChange={e => handleUpdateWorkflow({ nextFollowUpDate: e.target.value })} />
+                </div>
               </div>
             </div>
 
