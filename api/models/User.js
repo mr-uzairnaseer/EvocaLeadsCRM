@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['BDA', 'BDM'], default: 'BDA' },
+  role: { type: String, enum: ['BDA', 'BDM', 'Admin'], default: 'BDA' },
   workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace' },
   isOwner: { type: Boolean, default: false },
   handle: { type: String }, // e.g. @name
