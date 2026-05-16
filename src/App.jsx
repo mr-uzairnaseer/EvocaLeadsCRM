@@ -538,6 +538,8 @@ function App() {
                 onImport={() => { setImportType('leads'); setShowImportModal(true); }} 
                 viewMode={opportunitiesViewMode}
                 setViewMode={setOpportunitiesViewMode}
+                users={usersList}
+                currentUser={user}
                 onLeadClick={(lead) => {
                   setReturnTab('Opportunities');
                   setSelectedLead(lead);
@@ -760,7 +762,51 @@ const DashboardView = ({ stats, leads, activityList, onNavigate, onLeadClick }) 
   </div>
 );
 
-const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLeadClick }) => {
+const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLeadClick, users = [], currentUser }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [userFilter, setUserFilter] = useState('All Users');
+  const [myItems, setMyItems] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  const allStatuses = ['All Status', 'New Lead', 'Contacted', 'Qualified Lead', 'Sample / Price Sent', 'Order Confirmed', 'Delivery Scheduled', 'Delivered', 'Payment Pending', 'Payment Received', 'Active Customer / Repeat Order', 'Lost Lead'];
+
+  // Apply all filters
+  const filteredLeads = leads.filter(lead => {
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = [
+        lead.companyName, lead.contactPerson, lead.phoneWhatsApp,
+        lead.postcode, lead.businessType, lead.cityArea, lead.email
+      ].some(field => field && field.toLowerCase().includes(q));
+      if (!matchesSearch) return false;
+    }
+    // Status filter
+    if (statusFilter !== 'All Status' && lead.status !== statusFilter) return false;
+    // User filter
+    if (userFilter !== 'All Users') {
+      const ownerName = lead.leadOwner?.name || '';
+      if (ownerName !== userFilter) return false;
+    }
+    // My Items filter
+    if (myItems && currentUser) {
+      const ownerId = lead.leadOwner?._id || lead.leadOwner;
+      if (ownerId !== currentUser._id) return false;
+    }
+    return true;
+  });
+
+  // Close dropdowns on outside click
+  React.useEffect(() => {
+    const handleClick = () => { setShowStatusDropdown(false); setShowUserDropdown(false); };
+    if (showStatusDropdown || showUserDropdown) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [showStatusDropdown, showUserDropdown]);
+
   return (
     <div className="page-content">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -777,20 +823,54 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
       <div className="filters-bar">
         <div className="filter-search">
           <Search size={16} color="#94a3b8" />
-          <input type="text" placeholder="Search or use PL + BS + BA for postcodes..." />
+          <input type="text" placeholder="Search by name, phone, postcode..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button className="filter-dropdown">
-            <Filter size={16} />
-            <span>All Status</span>
-            <ChevronDown size={14} />
-          </button>
-          <button className="filter-dropdown">
-            <UserCircle size={16} />
-            <span>All Users</span>
-            <ChevronDown size={14} />
-          </button>
-          <button className="btn-secondary" style={{ padding: '0 1rem', height: '38px' }}>My Items</button>
+          {/* Status Filter */}
+          <div className="dropdown-container">
+            <button className="filter-dropdown" onClick={e => { e.stopPropagation(); setShowStatusDropdown(!showStatusDropdown); setShowUserDropdown(false); }}>
+              <Filter size={16} />
+              <span>{statusFilter}</span>
+              <ChevronDown size={14} />
+            </button>
+            {showStatusDropdown && (
+              <div className="custom-dropdown" onClick={e => e.stopPropagation()}>
+                {allStatuses.map(s => (
+                  <div key={s} className={`dropdown-item ${statusFilter === s ? 'active' : ''}`} onClick={() => { setStatusFilter(s); setShowStatusDropdown(false); }}>
+                    {statusFilter === s && <Check size={16} />}
+                    <span style={{ marginLeft: statusFilter === s ? '0' : '26px' }}>{s}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* User Filter */}
+          <div className="dropdown-container">
+            <button className="filter-dropdown" onClick={e => { e.stopPropagation(); setShowUserDropdown(!showUserDropdown); setShowStatusDropdown(false); }}>
+              <UserCircle size={16} />
+              <span>{userFilter}</span>
+              <ChevronDown size={14} />
+            </button>
+            {showUserDropdown && (
+              <div className="custom-dropdown" onClick={e => e.stopPropagation()}>
+                <div className={`dropdown-item ${userFilter === 'All Users' ? 'active' : ''}`} onClick={() => { setUserFilter('All Users'); setShowUserDropdown(false); }}>
+                  {userFilter === 'All Users' && <Check size={16} />}
+                  <span style={{ marginLeft: userFilter === 'All Users' ? '0' : '26px' }}>All Users</span>
+                </div>
+                {users.map(u => (
+                  <div key={u._id} className={`dropdown-item ${userFilter === u.name ? 'active' : ''}`} onClick={() => { setUserFilter(u.name); setShowUserDropdown(false); }}>
+                    {userFilter === u.name && <Check size={16} />}
+                    <span style={{ marginLeft: userFilter === u.name ? '0' : '26px' }}>{u.name} ({u.role})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* My Items Toggle */}
+          <button className={`btn-secondary ${myItems ? 'active' : ''}`} style={{ padding: '0 1rem', height: '38px', background: myItems ? '#2563eb' : '', color: myItems ? '#fff' : '', borderColor: myItems ? '#2563eb' : '' }} onClick={() => setMyItems(!myItems)}>My Items</button>
+
           <div className="view-toggle">
             <button className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><Grid size={16} /></button>
             <button className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><List size={16} /></button>
@@ -816,7 +896,7 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
               </tr>
             </thead>
             <tbody>
-              {leads.map(opp => (
+              {filteredLeads.map(opp => (
                 <TableRow 
                   key={opp._id}
                   business={opp.companyName} 
@@ -833,10 +913,11 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
               ))}
             </tbody>
           </table>
+          {filteredLeads.length === 0 && <p style={{ color: '#9ca3af', padding: '2rem', textAlign: 'center' }}>No leads match your filters.</p>}
         </div>
       ) : (
         <div className="opportunities-grid-container">
-          {leads.map(opp => (
+          {filteredLeads.map(opp => (
             <div 
               key={opp._id} 
               className="opportunity-grid-card" 
@@ -877,11 +958,12 @@ const OpportunitiesView = ({ leads, onAdd, onImport, viewMode, setViewMode, onLe
               </div>
             </div>
           ))}
+          {filteredLeads.length === 0 && <p style={{ color: '#9ca3af', padding: '2rem', textAlign: 'center' }}>No leads match your filters.</p>}
         </div>
       )}
 
       <div className="pagination-bar">
-        <div className="pagination-info">Showing {leads.length} of {leads.length} results</div>
+        <div className="pagination-info">Showing {filteredLeads.length} of {leads.length} results</div>
       </div>
     </div>
   );

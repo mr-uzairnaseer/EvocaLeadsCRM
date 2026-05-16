@@ -10,4 +10,9 @@ const activitySchema = new mongoose.Schema({
   workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', required: true }
 });
 
+// ─── Indexes ────────────────────────────────────────────────────────────
+activitySchema.index({ workspace: 1, createdAt: -1 });
+activitySchema.index({ workspace: 1, lead: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Activity', activitySchema);
+

@@ -169,14 +169,68 @@ app.post('/api/auth/login', async (req, res) => {
 
 // ─── LEAD ROUTES ────────────────────────────────────────────────────────
 
-// Get All Leads
+// Get All Leads — supports pagination + server-side filtering
 app.get('/api/leads', auth, async (req, res) => {
   try {
-    const leads = await Lead.find({ workspace: req.workspaceId })
-      .populate('leadOwner', 'name role')
-      .sort({ createdAt: -1 })
-      .lean();
-    res.send(leads);
+    const {
+      page, limit = 50,
+      search, status, owner,
+      sortBy = 'createdAt', sortOrder = 'desc'
+    } = req.query;
+
+    // Build filter
+    const filter = { workspace: req.workspaceId };
+    if (status) filter.status = status;
+    if (owner) filter.leadOwner = owner;
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      filter.$or = [
+        { companyName: regex },
+        { contactPerson: regex },
+        { phoneWhatsApp: regex },
+        { postcode: regex },
+        { cityArea: regex },
+        { email: regex }
+      ];
+    }
+
+    // Sort
+    const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+
+    // If no page specified, return all (backward compatible)
+    if (!page) {
+      const leads = await Lead.find(filter)
+        .populate('leadOwner', 'name role')
+        .sort(sort)
+        .lean();
+      return res.send(leads);
+    }
+
+    // Paginated response
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, total] = await Promise.all([
+      Lead.find(filter)
+        .populate('leadOwner', 'name role')
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Lead.countDocuments(filter)
+    ]);
+
+    res.send({
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: skip + data.length < total
+      }
+    });
   } catch (e) {
     res.status(500).send({ error: e.message });
   }
@@ -399,12 +453,41 @@ app.delete('/api/users/:id', auth, async (req, res) => {
 // --- ACTIVITY ROUTES ---
 app.get('/api/activity', auth, async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
-    const activity = await Activity.find({ workspace: req.workspaceId })
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .lean();
-    res.send(activity);
+    const { page, limit = 100 } = req.query;
+    const filter = { workspace: req.workspaceId };
+
+    // If no page specified, return latest (backward compatible)
+    if (!page) {
+      const activity = await Activity.find(filter)
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit))
+        .lean();
+      return res.send(activity);
+    }
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, total] = await Promise.all([
+      Activity.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Activity.countDocuments(filter)
+    ]);
+
+    res.send({
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: skip + data.length < total
+      }
+    });
   } catch (e) {
     res.status(500).send(e.message);
   }
@@ -510,11 +593,43 @@ app.get('/api/stats', auth, async (req, res) => {
 // --- ORDER ROUTES ---
 app.get('/api/orders', auth, async (req, res) => {
   try {
-    const orders = await Order.find({ workspace: req.workspaceId })
-      .populate('lead')
-      .populate('salesPerson')
-      .lean();
-    res.send(orders);
+    const { page, limit = 50 } = req.query;
+    const filter = { workspace: req.workspaceId };
+
+    if (!page) {
+      const orders = await Order.find(filter)
+        .populate('lead')
+        .populate('salesPerson')
+        .sort({ createdAt: -1 })
+        .lean();
+      return res.send(orders);
+    }
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, total] = await Promise.all([
+      Order.find(filter)
+        .populate('lead')
+        .populate('salesPerson')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Order.countDocuments(filter)
+    ]);
+
+    res.send({
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: skip + data.length < total
+      }
+    });
   } catch (e) {
     res.status(500).send(e.message);
   }
@@ -542,11 +657,43 @@ app.post('/api/orders', auth, async (req, res) => {
 // --- DELIVERY ROUTES ---
 app.get('/api/deliveries', auth, async (req, res) => {
   try {
-    const deliveries = await Delivery.find({ workspace: req.workspaceId })
-      .populate('lead')
-      .populate('order')
-      .lean();
-    res.send(deliveries);
+    const { page, limit = 50 } = req.query;
+    const filter = { workspace: req.workspaceId };
+
+    if (!page) {
+      const deliveries = await Delivery.find(filter)
+        .populate('lead')
+        .populate('order')
+        .sort({ createdAt: -1 })
+        .lean();
+      return res.send(deliveries);
+    }
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [data, total] = await Promise.all([
+      Delivery.find(filter)
+        .populate('lead')
+        .populate('order')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Delivery.countDocuments(filter)
+    ]);
+
+    res.send({
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: skip + data.length < total
+      }
+    });
   } catch (e) {
     res.status(500).send(e.message);
   }

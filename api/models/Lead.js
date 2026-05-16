@@ -86,4 +86,11 @@ leadSchema.pre('save', function(next) {
   next();
 });
 
+// ─── Indexes for pagination & filtering performance ─────────────────────
+leadSchema.index({ workspace: 1, createdAt: -1 });
+leadSchema.index({ workspace: 1, status: 1, createdAt: -1 });
+leadSchema.index({ workspace: 1, leadOwner: 1, createdAt: -1 });
+leadSchema.index({ workspace: 1, nextFollowUpDate: 1 });
+
 module.exports = mongoose.model('Lead', leadSchema);
+
